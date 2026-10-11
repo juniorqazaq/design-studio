@@ -13,7 +13,8 @@
     "registry:build": "node --import tsx scripts/build-registry.ts",
     "registry:validate": "node --import tsx scripts/validate-registry.ts",
     "prepack": "npm run build",
-    "ci:smoke": "node scripts/ci-smoke.mjs"
+    "ci:smoke": "node scripts/ci-smoke.mjs",
+    "test:browser": "node scripts/ci-smoke.mjs --browser"
   },
   "dependencies": {
     "postcss": "^8.5.0",

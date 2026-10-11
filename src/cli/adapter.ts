@@ -3,10 +3,11 @@ import { dirname, extname, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import postcss from 'postcss';
 import { declarations, toCSS, scaleCSS, themes, themeSelector, type DesignConfig } from '../shared/design.js';
+import {unconditional} from '../shared/project-colors.js';
 import { safePath, readLimited, isManagedStylesheet } from './project.js';
 export interface Change { path: string; before: string | null; after: string; }
 export async function planApply(root: string,c: DesignConfig,target?:string): Promise<Change> {
-  const path=await safePath(root,target??'design.tokens.css');
+  const path=await safePath(root,target??[c.application.directory,'design.tokens.css'].filter(Boolean).join('/'));
   if (extname(path)!=='.css') throw new Error('The supported adapter requires a .css file.');
   let before:string|null=null;
   try { before=await readLimited(path); } catch (e) { if ((e as NodeJS.ErrnoException).code!=='ENOENT') throw e; }
@@ -21,18 +22,18 @@ export async function planApply(root: string,c: DesignConfig,target?:string): Pr
   const names=new Set(Object.keys(declarations(c,'light')));
   // A separate layer must outrank equally scoped project tokens, regardless of Vite import order.
   const layer=!target||managed;
-  if(layer) ast.walkRules(rule=>{for(const theme of themes)if(rule.selector===themeSelector(c,theme))rule.selector=themeSelector(c,theme,true);});
+  if(layer) ast.walkRules(rule=>{for(const theme of themes)if(rule.selector===themeSelector(c,theme)||rule.selector===themeSelector({...c,application:{scope:c.application.scope}},theme,true))rule.selector=themeSelector(c,theme,true);});
   const selectors=themes.map(t=>themeSelector(c,t,layer));
   let matched=false;
   ast.walkDecls(d=>{
     if (!names.has(d.prop)) return;
-    if (d.parent?.type!=='rule' || d.parent.parent?.type!=='root' || !selectors.includes(d.parent.selector)) throw new Error(`${d.prop} appears in an unsupported selector or conditional. Use a separate token layer or simplify the token file.`);
+    if (d.parent?.type!=='rule' || !unconditional(d.parent) || !selectors.includes(d.parent.selector)) throw new Error(`${d.prop} appears in an unsupported selector or conditional. Use a separate token layer or simplify the token file.`);
     if (d.important) throw new Error(`${d.prop} uses !important. Remove it explicitly before applying.`);
     matched=true;
   });
   if (!matched) throw new Error('No mapped variables found in the target. Edit tokenMappings or omit --target to introduce a token layer.');
   for (const theme of themes) {
-    const selector=themeSelector(c,theme,layer), rules=ast.nodes.filter(n=>n.type==='rule' && n.selector===selector);
+    const selector=themeSelector(c,theme,layer), rules:postcss.Rule[]=[];ast.walkRules(rule=>{if(rule.selector===selector&&unconditional(rule))rules.push(rule);});
     if (rules.length>1) throw new Error(`Multiple ${selector} blocks found. Consolidate them before applying.`);
     const rule=rules[0] as postcss.Rule|undefined ?? postcss.rule({selector});
     if (!rules.length) ast.append(rule);
@@ -44,13 +45,13 @@ export async function planApply(root: string,c: DesignConfig,target?:string): Pr
   }
   const starts:postcss.Comment[]=[],ends:postcss.Comment[]=[];
   ast.walkComments(comment=>{if(comment.text==='Design Studio typography scale')starts.push(comment);if(comment.text==='End Design Studio typography scale')ends.push(comment);});
-  if(starts.length||ends.length){
+  if(c.application.applyTypography!==false&&(starts.length||ends.length)){
     if(starts.length!==1||ends.length!==1||starts[0].parent!==ast||ends[0].parent!==ast)throw new Error('Ambiguous managed typography scale block. Review it manually before applying.');
     const begin=ast.nodes.indexOf(starts[0]),end=ast.nodes.indexOf(ends[0]),rules=ast.nodes.slice(begin+1,end);
     if(end<=begin||rules.length!==6||rules.some((node,i)=>node.type!=='rule'||![`h${i+1}`,`:root h${i+1}`,`.design-scope h${i+1}`].includes(node.selector)||node.nodes.length!==1||node.nodes[0].type!=='decl'||node.nodes[0].prop!=='font-size'||node.nodes[0].value!==`var(--ds-size-h${i+1})`||node.nodes[0].important))throw new Error('Managed typography scale block has custom edits. Preserve those edits by reviewing the block manually.');
     for(const node of ast.nodes.slice(begin,end+1))node.remove();
   }
-  if(c.typography.scale!==undefined)ast.append(postcss.parse('\n\n'+scaleCSS(c)));
+  if(c.application.applyTypography!==false&&c.typography.scale!==undefined)ast.append(postcss.parse('\n\n'+scaleCSS(c)));
   return {path,before,after:ast.toString()};
 }
 export function review(change: Change, root: string) {

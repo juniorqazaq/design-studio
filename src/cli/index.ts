@@ -2,6 +2,7 @@
 import {realpathSync} from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {resolveFrontend} from './project-root.js';
 import { inspectProject, readLimited } from './project.js';
 import { exportSkill } from './adapter.js';
 import { validateConfig } from '../shared/design.js';
@@ -37,7 +38,7 @@ async function main() {
     // Vite rejects Windows 8.3 paths; canonicalize its module path and dependency imports.
     const canonicalEntry=pathToFileURL(realpathSync.native(fileURLToPath(import.meta.url)));
     const { startEditor }=await import(new URL('./server.js',canonicalEntry).href);
-    await startEditor(root,port,!o['no-open']);return;
+    const project=await resolveFrontend(root);process.chdir(project);await startEditor(project,port,!o['no-open']);return;
   }
   if(command==='history'){console.log((await listTransactions(root)).join('\n')||'No apply transactions.');return;}
   if(command==='recover'){if(!o.id)throw new Error('--id is required. Use history to list apply records.');console.log('Recovered '+await recoverTransaction(root,String(o.id)));return;}
