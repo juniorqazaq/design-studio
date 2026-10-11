@@ -1,6 +1,6 @@
 # Design Studio repository
 
-Use Node.js 22.12+ and npm. The package executable is `design-studio`; the internal npm name is already used by an unrelated public package, so do not advertise a public npx installation.
+Use Node.js 22.12+ and npm. The package executable is `design-studio`; the private package name is `design-studio-workspace`. The public npm name `design-studio` belongs to an unrelated package, so do not advertise `npx design-studio`. Recheck the candidate name before a future registry release.
 
 ## Commands
 

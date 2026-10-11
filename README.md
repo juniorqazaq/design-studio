@@ -4,53 +4,78 @@ Design Studio is a local browser editor for **existing frontend projects**. Run 
 
 ![Design Studio editing an actual React/Vite website](docs/workspace.png)
 
+After the one-time global installation below, launch from your website:
+
+```sh
+cd my-website
+design-studio
+```
+
 ## Current status
 
 This is an early, locally installable release. Automatic actual-project preview and persistent font application support **React + Vite + index.html + CSS custom properties**. The adapter preserves existing layout, functionality, unrelated rules and local edits. A CSS-only adapter remains available for platform-font configurations in other projects; it does not connect styles automatically. Next.js, Vue, Svelte, CSS-in-JS and complex conditional token cascades do not have persistent font adapters.
 
-The internal package and executable are both named `design-studio`. **This project is not published to npm.** The npm registry already contains an unrelated `design-studio@0.0.1` package (checked during release preparation). Do not use `npx design-studio` to install this project. A future registry release needs a distinct, verified available package name.
+The executable is `design-studio`; the package name is `design-studio-workspace`. **This project is not published to npm.** The npm registry contains an unrelated `design-studio` package, so do not use `npx design-studio`. `npm view design-studio-workspace name version --json` returned E404 (not found) on 2026-10-11. This is a candidate for a future registry release, not a reserved name or a guarantee that npm will accept it; recheck availability before publishing. The package remains private.
 
 Node.js **22.12 or newer** is required. The CLI uses platform-neutral Node/Vite APIs and browser-opening commands for macOS, Linux and Windows. Validation here uses macOS arm64, Node 24.11.1 and Chrome; other platforms still need smoke testing. Use `--no-open` if automatic browser opening is unavailable.
 
-## Quick start: repository checkout
+## One-time installation
 
-From this checkout:
+In the Design Studio checkout, build a local tarball:
 
 ```sh
 npm ci
-npm run build
+npm pack
+```
+
+`npm pack` builds the editor and CLI and creates `design-studio-workspace-0.1.0.tgz`. Install that exact tarball globally, outside your website:
+
+```sh
+npm install --global "/absolute/path/to/design-studio-workspace-0.1.0.tgz"
+```
+
+Ensure npm's global executable directory is on your terminal's PATH (`npm config get prefix`: `bin` under that prefix on macOS/Linux, the prefix itself on Windows). If the default prefix needs administrator permissions, use a user-owned prefix on macOS/Linux:
+
+```sh
+npm install --global --prefix "$HOME/.local" "/absolute/path/to/design-studio-workspace-0.1.0.tgz"
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Keep that PATH export in your shell startup file for future terminals. Run `design-studio --help` to confirm installation. Global tarball installation was verified with a separate temporary prefix and PATH on macOS; the website did not receive a Design Studio dependency. No npm publication is required.
+
+## Everyday usage
+
+Open a terminal inside your existing website:
+
+```sh
+cd my-website
+design-studio
+```
+
+The editor opens automatically at `http://127.0.0.1:4310`; supported React/Vite projects preview at port 4311. Startup prints the resolved project path, editor URL and preview status. Both servers bind to loopback. Bundled editor assets and fonts resolve relative to the installed tool, independently of your current directory.
+
+Explicit launch commands and options remain available:
+
+```sh
+design-studio dev
+design-studio --no-open
+design-studio --port 4410
+design-studio --project "/path/to/my website"
+design-studio --help
+```
+
+`--port` selects two consecutive ports: the editor at that port, preview at the next. If the editor port is occupied, startup fails with instructions to choose a free pair. If the preview port is occupied or website dependencies are missing, the editor remains available and prints the reason and remedy; actual-project preview is unavailable until you fix the issue and restart. Browser-launch failure prints the URL to open manually; `--no-open` suppresses launch.
+
+Install your website's own dependencies using its package manager before starting (for npm projects, `npm ci` with a lockfile or `npm install`). Design Studio never installs them automatically and never adds itself to your website's manifest. Quoted paths containing spaces are supported.
+
+For development from the tool checkout only:
+
+```sh
 npm install --prefix examples/react-css-vars
 npm run cli -- dev --project "./examples/react-css-vars"
 ```
 
-The example’s React/Vite dependencies are installed explicitly by the third command; Design Studio never installs website dependencies itself.
-
-For your existing website, which already has its dependencies installed:
-
-```sh
-npm run cli -- dev --project "/absolute/path/to/my website"
-```
-
-The editor opens at `http://127.0.0.1:4310`; the supported application preview uses port 4311. Both bind to loopback. Use `--port 4410` to choose a different pair of consecutive free ports. Use `--no-open` to start without opening a browser. Quoted paths containing spaces are supported.
-
-## Install the local package
-
-In the Design Studio checkout, `npm pack` builds the browser and CLI and creates `design-studio-0.1.0.tgz`:
-
-```sh
-npm pack
-```
-
-Install that exact tarball into an isolated tools directory; this does not add dependencies to your website:
-
-```sh
-mkdir -p /tmp/design-studio-tools
-npm install --prefix /tmp/design-studio-tools /absolute/path/to/design-studio-0.1.0.tgz
-cd "/absolute/path/to/my website"
-/tmp/design-studio-tools/node_modules/.bin/design-studio dev
-```
-
-Alternatively, install the tarball globally with `npm install -g /absolute/path/to/design-studio-0.1.0.tgz`, then use `design-studio dev` inside your website. Global installation can require permissions; the isolated installation above is the validated path. The CLI resolves its bundled editor and fonts relative to the installed package, not the current directory. No npm publication or hosted deployment is configured.
+That first command explicitly installs the example website's dependencies; everyday usage needs only `design-studio`.
 
 ## Typical workflow
 
@@ -64,7 +89,7 @@ Alternatively, install the tarball globally with `npm install -g /absolute/path/
 The CLI supports the same plan and transaction logic:
 
 ```sh
-# From your website; use the installed executable or its absolute path.
+# From your website, after the one-time global installation.
 design-studio inspect
 design-studio apply --config ./design.config.json --target ./src/tokens.css --dry-run
 design-studio apply --config ./design.config.json --target ./src/tokens.css
@@ -73,7 +98,7 @@ design-studio rollback --id <printed-transaction-id> --dry-run
 design-studio rollback --id <printed-transaction-id>
 ```
 
-Leave out `--target` to introduce a managed `design.tokens.css` layer. An existing unmanaged default filename is refused. For a supported React/Vite project, the stylesheet is connected automatically. Existing mapped token selectors must be exactly `:root` and `:root[data-theme="dark"]`, or `.design-scope` and `.design-scope[data-theme="dark"]`. Put the theme attribute on the same scope element. Components must already consume the mapped semantic variables for their colors to change; the adapter does not rewrite arbitrary component colors.
+Leave out `--target` to introduce a managed `design.tokens.css` layer. Its repeated scope selectors outrank ordinary project token declarations regardless of Vite import order, matching the temporary preview. An existing unmanaged default filename is refused. For a supported React/Vite project, the stylesheet is connected automatically. Existing mapped token selectors must be exactly `:root` and `:root[data-theme="dark"]`, or `.design-scope` and `.design-scope[data-theme="dark"]`. Put the theme attribute on the same scope element. Components must already consume the mapped semantic variables for their colors to change; the adapter does not rewrite arbitrary component colors.
 
 ### Failure recovery and rollback
 
@@ -87,6 +112,8 @@ design-studio recover --id <interrupted-transaction-id>
 Recovery restores files that match the recorded before/after bytes and refuses unknown edits. Never delete history before checking whether it contains an interrupted transaction. Backups contain project source; keep `design-studio-history/` out of Git and do not upload it with bug reports. Add `design-workspace/` to your project's ignore file if saved designs contain private project details. Application resources under `design-studio-assets/` **should** be committed in the target website when you want to keep the applied design.
 
 ## Design controls
+
+**Map project colors** connects detected CSS variables (such as `--primary`) to Text, Background, Primary, Secondary and Accent. The mapping is retained in saves, prompts, CSS/Skill exports and Apply. Current design colors are kept unless you explicitly choose detected Light/Dark values. Only supported literal HEX declarations are offered; conditional/other selectors and `!important` are flagged for manual integration.
 
 The persistent toolbar exposes **Text, Background, Primary, Secondary, Accent, Light/Dark, Fonts and Randomize**. Light and Dark palettes are independent. Supporting surface, muted, border, label, hover and focus tokens are derived unless overridden. Contrast results flag failing combinations without silently replacing user values.
 
@@ -173,4 +200,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports should include Node/OS versi
 
 ## Known limitations and roadmap
 
-Automatic persistent integration is currently React/Vite and literal CSS tokens. Fonts with unrecognized redistribution licenses need manual review. Apply leaves unrelated declarations and previous unused resources intact; it does not install packages, restructure layout or rewrite arbitrary component colors. Rollback refuses conflicts and crash recovery requires an explicit command. The browser bundle currently produces a Vite size warning; catalog code splitting is future work. Windows/Linux release smoke tests and additional adapters are next, followed by a separately named npm release after availability/ownership are resolved. No npm release or hosted deployment is part of this preparation.
+Automatic persistent integration is currently React/Vite and literal CSS tokens. Fonts with unrecognized redistribution licenses need manual review. Apply leaves unrelated declarations and previous unused resources intact; it does not install packages, restructure layout or rewrite arbitrary component colors. Rollback refuses conflicts and crash recovery requires an explicit command. The browser bundle currently produces a Vite size warning; catalog code splitting is future work. Windows/Linux release smoke tests and additional adapters are next, followed by a `design-studio-workspace` npm release after availability/ownership are rechecked. No npm release or hosted deployment is part of this preparation.
