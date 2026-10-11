@@ -6,7 +6,7 @@
 
 ![Design Studio: actual React/Vite website, live color controls, contrast checks and recommendations](docs/workspace.jpg)
 
-*Actual running website from [`examples/react-css-vars`](examples/react-css-vars), with temporary Primary and Accent color changes. The preview is connected to the project; source files remain unchanged.*
+*Current Design Studio workspace with the branded icon, persistent color toolbar, Light/Dark controls and an actual local website preview. Preview edits are temporary; source files remain unchanged.*
 
 After the one-time global installation below, launch from your website:
 
