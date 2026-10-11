@@ -1,0 +1,10 @@
+{
+  "project": "Fontsource",
+  "sourceUrl": "https://api.fontsource.org/v1/fonts",
+  "documentation": "https://fontsource.org/docs/api/fonts",
+  "retrievedOn": "2026-10-11",
+  "families": 2100,
+  "material": "Family IDs/names, categories, weights, styles, subsets and variable availability; metadata only. Font binaries are downloaded separately from exact-version Fontsource npm packages on demand.",
+  "fontLicenses": "Package-specific licenses and copyright notices are preserved in cache manifests and skill exports. Catalog subset names are not treated as verified glyph coverage.",
+  "sha256": "a5009783510e78d8cf4e8df9275782073b6cf002517eaaa8f0d9deab88e43b54"
+}

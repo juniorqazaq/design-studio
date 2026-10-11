@@ -1,0 +1,58 @@
+import {mkdir,readFile,writeFile,rename,unlink,lstat,rmdir,readdir,rm,realpath} from 'node:fs/promises';
+import {realpathSync} from 'node:fs';
+import {dirname,relative,resolve} from 'node:path';
+import {randomUUID,createHash} from 'node:crypto';
+import {safePath} from './project.js';
+export interface FileChange {path:string;before:Uint8Array|null;after:Uint8Array|null;mode:number;}
+export interface ApplyPlan {changes:FileChange[];notes:string[];}
+interface Entry {path:string;before:string|null;after:string|null;mode:number;}
+interface RecordData {formatVersion:1;id:string;state:'prepared'|'applied'|'rolled-back'|'recovered';kind:'apply'|'rollback'|'recovery';directories?:string[];files:Entry[];}
+const history='design-studio-history';
+const hash=(bytes:Uint8Array|null)=>bytes===null?null:createHash('sha256').update(bytes).digest('hex');
+export async function fileBytes(root:string,name:string){const path=await safePath(root,name);try{const stat=await lstat(path);if(!stat.isFile()||stat.size>10_000_000)throw new Error('Apply requires regular files smaller than 10 MB.');return {path,bytes:new Uint8Array(await readFile(path)),mode:stat.mode&0o777};}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;return {path,bytes:null,mode:0o644};}}
+export async function proposedFile(root:string,name:string,after:string|Uint8Array|null):Promise<FileChange>{const f=await fileBytes(root,name);return {path:f.path,before:f.bytes,after:typeof after==='string'?new TextEncoder().encode(after):after,mode:f.mode};}
+export async function listTransactions(root:string){const dir=await safePath(root,history);try{return (await readdir(dir)).filter(name=>/^\d+-[a-f0-9-]{36}$/.test(name)).sort().reverse();}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;return [];}}
+async function readRecord(root:string,id:string){if(!/^\d+-[a-f0-9-]{36}$/.test(id))throw new Error('Invalid apply transaction ID.');const dir=await safePath(root,`${history}/${id}`);const record=JSON.parse(await readFile(await safePath(root,`${history}/${id}/record.json`),'utf8')) as RecordData;
+ if(record.formatVersion!==1||record.id!==id||!['prepared','applied','rolled-back','recovered'].includes(record.state)||!['apply','rollback','recovery'].includes(record.kind)||!Array.isArray(record.files)||record.files.length>250)throw new Error('Invalid recovery record.');
+ const paths=new Set<string>();for(const f of record.files){if(typeof f.path!=='string'||paths.has(f.path)||typeof f.mode!=='number'||!Number.isInteger(f.mode)||f.mode<0||f.mode>0o777||[f.before,f.after].some(h=>h!==null&&(typeof h!=='string'||!/^[a-f0-9]{64}$/.test(h))))throw new Error('Invalid recovery entry.');await safePath(root,f.path);paths.add(f.path);}for(const directory of record.directories??[])await safePath(root,directory);return {record,dir};}
+async function recordedBytes(root:string,id:string,index:number,side:'before'|'after',expected:string|null){if(expected===null)return null;const path=await safePath(root,`${history}/${id}/${index}.${side}`),bytes=new Uint8Array(await readFile(path));if(hash(bytes)!==expected)throw new Error('Recovery backup integrity check failed.');return bytes;}
+export async function planRollback(root:string,id?:string):Promise<ApplyPlan>{
+ let selected=id;if(!selected)for(const candidate of await listTransactions(root)){const {record}=await readRecord(root,candidate);if(record.state==='applied'&&record.kind==='apply'){selected=candidate;break;}}if(!selected)throw new Error('No apply transaction to roll back.');const {record}=await readRecord(root,selected);
+ if(record.state!=='applied')throw new Error(`Transaction is ${record.state}; use recover for an interrupted apply.`);
+ const changes:FileChange[]=[];
+ for(const [i,f] of record.files.entries()){const current=await fileBytes(root,f.path);if(hash(current.bytes)!==f.after||current.mode!==f.mode)throw new Error(`Rollback conflict: ${f.path} changed after Apply. Preserve those edits and resolve the conflict before rollback.`);changes.push({path:current.path,before:current.bytes,after:await recordedBytes(root,selected,i,'before',f.before),mode:f.mode});}
+ return {changes,notes:[`Rollback of ${selected}. Later edits are refused. Backups remain in ${history}.`]};
+}
+export async function recoverTransaction(root:string,id:string){const {record,dir}=await readRecord(root,id);if(record.state!=='prepared')throw new Error('Only an interrupted prepared transaction can be recovered.');
+ const changes:FileChange[]=[];for(const [i,f] of record.files.entries()){const current=await fileBytes(root,f.path),digest=hash(current.bytes);if(digest!==f.before&&digest!==f.after)throw new Error(`Recovery conflict: ${f.path} has edits outside this transaction.`);if(digest===f.after)changes.push({path:current.path,before:current.bytes,after:await recordedBytes(root,id,i,'before',f.before),mode:f.mode});}
+ await commitChanges(root,{changes,notes:[]},{kind:'recovery'});for(const name of [...(record.directories??[])].reverse())await rmdir(await safePath(root,name)).catch(e=>{if(!['ENOTEMPTY','ENOENT'].includes(e.code))throw e;});record.state='recovered';await writeFile(resolve(dir,'record.json'),JSON.stringify(record,null,2));return id;}
+export function reviewPlan(root:string,plan:ApplyPlan){root=realpathSync(root);return [...plan.notes,...plan.changes.map(c=>{const name=relative(root,c.path).split('\\').join('/');if(hash(c.before)===hash(c.after))return `No changes: ${name}`;if(/\.(woff2|png|jpg)$/i.test(name))return `${c.before===null?'CREATE':c.after===null?'DELETE':'UPDATE'} ${name}\n  SHA-256 before ${hash(c.before)??'absent'} -> after ${hash(c.after)??'absent'} (${c.after?.length??0} bytes)`;return `--- ${name} (before)\n+++ ${name} (proposed)\n`+new TextDecoder().decode(c.before??new Uint8Array()).split('\n').map(line=>'- '+line).join('\n')+'\n'+new TextDecoder().decode(c.after??new Uint8Array()).split('\n').map(line=>'+ '+line).join('\n');})].join('\n\n');}
+async function commitUnlocked(root:string,plan:ApplyPlan,options:{kind?:RecordData['kind'];replace?:typeof rename}={}){
+ const replace=options.replace??rename;
+ const changes=plan.changes.filter(c=>hash(c.before)!==hash(c.after));if(!changes.length)return null;if(changes.length>250)throw new Error('Apply plan exceeds 250 files.');
+ const paths=new Set<string>();for(const c of changes){await safePath(root,c.path);if(paths.has(c.path))throw new Error('Duplicate apply path.');paths.add(c.path);const current=await fileBytes(root,c.path);if(hash(current.bytes)!==hash(c.before)||current.mode!==c.mode)throw new Error(`File changed since review: ${relative(root,c.path)}. Generate a fresh review.`);}
+ const id=Date.now()+'-'+randomUUID(),dir=await safePath(root,`${history}/${id}`),record:RecordData={formatVersion:1,id,state:'prepared',kind:options.kind??'apply',files:changes.map(c=>({path:relative(root,c.path).split('\\').join('/'),before:hash(c.before),after:hash(c.after),mode:c.mode}))};
+ await mkdir(dir,{recursive:true,mode:0o700});for(const [i,c] of changes.entries()){if(c.before!==null)await writeFile(resolve(dir,`${i}.before`),c.before,{flag:'wx',mode:0o600});if(c.after!==null)await writeFile(resolve(dir,`${i}.after`),c.after,{flag:'wx',mode:0o600});}await writeFile(resolve(dir,'record.json'),JSON.stringify(record,null,2),{flag:'wx',mode:0o600});
+ const staged:{change:FileChange;temp:string}[]=[],written:FileChange[]=[],createdDirs:string[]=[];
+ try{
+  for(const c of changes){let d=dirname(c.path);const missing:string[]=[];while(d!==resolve(root)){try{await lstat(d);break;}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;missing.unshift(d);d=dirname(d);}}for(const path of missing){await mkdir(path);createdDirs.push(path);}if(c.after!==null){const temp=c.path+'.'+randomUUID()+'.tmp';await writeFile(temp,c.after,{flag:'wx',mode:c.mode});staged.push({change:c,temp});}}
+  record.directories=createdDirs.map(path=>relative(root,path));await writeFile(resolve(dir,'record.json'),JSON.stringify(record,null,2));
+  for(const c of changes){const current=await fileBytes(root,c.path);if(hash(current.bytes)!==hash(c.before)||current.mode!==c.mode)throw new Error(`File changed since review: ${relative(root,c.path)}. Generate a fresh review.`);}
+  for(const c of changes){const current=await fileBytes(root,c.path);if(hash(current.bytes)!==hash(c.before))throw new Error(`File changed during Apply: ${relative(root,c.path)}.`);if(c.after===null)await unlink(c.path);else await replace(staged.find(s=>s.change===c)!.temp,c.path);written.push(c);}
+  record.state='applied';await writeFile(resolve(dir,'record.json'),JSON.stringify(record,null,2));return id;
+ }catch(error){
+  let conflict=false;for(const c of written.reverse()){const current=await fileBytes(root,c.path);if(hash(current.bytes)!==hash(c.after)){conflict=true;continue;}if(c.before===null)await unlink(c.path);else{const temp=c.path+'.'+randomUUID()+'.restore';await writeFile(temp,c.before,{flag:'wx',mode:c.mode});await rename(temp,c.path);}}
+  if(!conflict){record.state='recovered';await writeFile(resolve(dir,'record.json'),JSON.stringify(record,null,2));}throw new Error(`${(error as Error).message} ${conflict?`Recovery conflict; backups are in ${history}/${id}. Run recover after resolving edits.`:'Applied files were restored from backups.'}`);
+ }finally{for(const s of staged)await rm(s.temp,{force:true});for(const d of createdDirs.reverse())await rmdir(d).catch(e=>{if(!['ENOTEMPTY','ENOENT'].includes(e.code))throw e;});}
+}
+
+export async function rollbackProject(root:string,id?:string){const plan=await planRollback(root,id);const original=plan.notes[0].split(' ')[2].replace(/\.$/,'');const result=await commitChanges(root,plan,{kind:'rollback'});const {record,dir}=await readRecord(root,original);for(const name of [...(record.directories??[])].reverse())await rmdir(await safePath(root,name)).catch(e=>{if(!['ENOTEMPTY','ENOENT'].includes(e.code))throw e;});record.state='rolled-back';await writeFile(resolve(dir,'record.json'),JSON.stringify(record,null,2));return result;}
+
+export async function ownedFiles(root:string){const result=new Map<string,string|null>();for(const id of await listTransactions(root)){const {record}=await readRecord(root,id);if(record.state==='applied'&&record.kind==='apply')for(const file of record.files)if(!result.has(file.path))result.set(file.path,file.after);}return result;}
+export async function commitChanges(root:string,plan:ApplyPlan,options:{kind?:RecordData['kind'];replace?:typeof rename}={}){
+ if(plan.changes.every(c=>hash(c.before)===hash(c.after)))return null;
+ root=await realpath(root);
+ const directory=await safePath(root,history);await mkdir(directory,{recursive:true,mode:0o700});const lock=await safePath(root,`${history}/active.lock`);
+ try{await writeFile(lock,JSON.stringify({pid:process.pid}),{flag:'wx',mode:0o600});}catch(e){if((e as NodeJS.ErrnoException).code!=='EEXIST')throw e;const owner=JSON.parse(await readFile(lock,'utf8'));if(!Number.isInteger(owner.pid)||owner.pid<=0)throw new Error('Invalid apply lock. Inspect design-studio-history/active.lock manually.');try{process.kill(owner.pid,0);throw new Error('Another Apply is running in this project. Wait for it to finish.');}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}await unlink(lock);await writeFile(lock,JSON.stringify({pid:process.pid}),{flag:'wx',mode:0o600});}
+ try{if(options.kind!=='recovery')for(const id of await listTransactions(root)){const {record}=await readRecord(root,id);if(record.state==='prepared')throw new Error(`Interrupted Apply requires recovery: design-studio recover --id ${id}`);}return await commitUnlocked(root,plan,options);}finally{await unlink(lock);}
+}

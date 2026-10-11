@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "id": "my-original-preset",
+  "name": "My original preset",
+  "description": "Contribution template: edit this original composition using reviewed sources.",
+  "styleTags": [
+    "bold",
+    "editorial"
+  ],
+  "categories": [
+    "portfolio",
+    "editorial"
+  ],
+  "dominantColor": "neutral",
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "typography": "serif",
+  "languages": [
+    "en",
+    "ru",
+    "kk"
+  ],
+  "composition": "original",
+  "config": {
+    "schemaVersion": 1,
+    "palettes": {
+      "light": {
+        "text": "#171717",
+        "background": "#FCFCFC",
+        "primary": "#242424",
+        "secondary": "#ECECEC",
+        "accent": "#BF402F"
+      },
+      "dark": {
+        "text": "#E8EDE7",
+        "background": "#171E1A",
+        "primary": "#808080",
+        "secondary": "#353B37",
+        "accent": "#C75748"
+      }
+    },
+    "overrides": {
+      "light": {},
+      "dark": {}
+    },
+    "tokenMappings": {
+      "text": "--ds-text",
+      "background": "--ds-background",
+      "primary": "--ds-primary",
+      "secondary": "--ds-secondary",
+      "accent": "--ds-accent",
+      "surface": "--ds-surface",
+      "muted": "--ds-muted",
+      "border": "--ds-border",
+      "primaryHover": "--ds-primary-hover",
+      "onPrimary": "--ds-on-primary",
+      "onSecondary": "--ds-on-secondary",
+      "focus": "--ds-focus"
+    },
+    "typography": {
+      "heading": "notoSerif",
+      "body": "notoSans",
+      "headingWeight": 700,
+      "bodyWeight": 400,
+      "baseSize": 20,
+      "lineHeight": 1.6
+    },
+    "spacing": 48,
+    "radius": 0,
+    "application": {
+      "scope": ":root"
+    },
+    "provenance": [
+      {
+        "id": "ui-ux-pro-max",
+        "project": "UI UX Pro Max",
+        "sourceUrl": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+        "sourcePaths": [
+          "src/ui-ux-pro-max/data/styles.csv",
+          "src/ui-ux-pro-max/data/colors.csv"
+        ],
+        "pinnedVersion": "67803eac81607188194aea9842a723b89326d90d",
+        "copyright": "Copyright (c) 2024 Next Level Builder",
+        "license": "MIT",
+        "upstreamLicensePath": "LICENSE",
+        "localLicensePath": "licenses/ui-ux-pro-max.txt",
+        "usage": "adapted",
+        "modifications": "Selected palette/style rows; semantic mapping and condensed guidance. Typography replaced with verified Noto fonts."
+      },
+      {
+        "id": "open-props",
+        "project": "Open Props",
+        "sourceUrl": "https://github.com/argyleink/open-props",
+        "sourcePaths": [
+          "src/props.sizes.js",
+          "src/props.borders.js"
+        ],
+        "pinnedVersion": "530682d04327f842f56bb1ec33cf84a3cadb3876",
+        "copyright": "Copyright (c) 2021 Adam Argyle",
+        "license": "MIT",
+        "upstreamLicensePath": "LICENSE",
+        "localLicensePath": "licenses/open-props.txt",
+        "usage": "adapted",
+        "modifications": "Selected spacing and radius tokens converted from rem to px at 16px."
+      },
+      {
+        "id": "anthropic-frontend-design",
+        "project": "Anthropic Frontend Design",
+        "sourceUrl": "https://github.com/anthropics/skills",
+        "sourcePaths": [
+          "skills/frontend-design/SKILL.md"
+        ],
+        "pinnedVersion": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
+        "copyright": "Anthropic; frontend-design authors",
+        "license": "Apache-2.0",
+        "upstreamLicensePath": "skills/frontend-design/LICENSE.txt",
+        "localLicensePath": "licenses/anthropic-frontend-design.txt",
+        "usage": "adapted",
+        "modifications": "Selected design-direction guidance rewritten for preset exports; full upstream skill excluded."
+      },
+      {
+        "id": "noto-sans",
+        "project": "Fontsource Noto Sans",
+        "sourceUrl": "https://github.com/fontsource/fontsource",
+        "sourcePaths": [
+          "LICENSE",
+          "metadata.json",
+          "files/noto-sans-latin-400-normal.woff2",
+          "files/noto-sans-latin-700-normal.woff2",
+          "files/noto-sans-cyrillic-400-normal.woff2",
+          "files/noto-sans-cyrillic-700-normal.woff2",
+          "files/noto-sans-cyrillic-ext-400-normal.woff2",
+          "files/noto-sans-cyrillic-ext-700-normal.woff2"
+        ],
+        "pinnedVersion": "@fontsource/noto-sans@5.3.0",
+        "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic) NotoSans-Italic[wdth,wght].ttf: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "license": "OFL-1.1",
+        "upstreamLicensePath": "package/LICENSE",
+        "localLicensePath": "licenses/noto-sans.txt",
+        "usage": "copied",
+        "modifications": "Unmodified static 400/700 normal WOFF2 subsets; CSS paths rewritten for local hosting.",
+        "assetUrl": "https://registry.npmjs.org/@fontsource/noto-sans/-/noto-sans-5.3.0.tgz",
+        "integrity": "sha512-fBCog2PY7DiVVTEEqtI/Qdinx/knobHYfoGpjFXdfBX5RoJaBp1Prw2G75p0OIsdlMZg3cLo0c+YbIUYOxnQJw=="
+      },
+      {
+        "id": "noto-serif",
+        "project": "Fontsource Noto Serif",
+        "sourceUrl": "https://github.com/fontsource/fontsource",
+        "sourcePaths": [
+          "LICENSE",
+          "metadata.json",
+          "files/noto-serif-latin-400-normal.woff2",
+          "files/noto-serif-latin-700-normal.woff2",
+          "files/noto-serif-cyrillic-400-normal.woff2",
+          "files/noto-serif-cyrillic-700-normal.woff2",
+          "files/noto-serif-cyrillic-ext-400-normal.woff2",
+          "files/noto-serif-cyrillic-ext-700-normal.woff2"
+        ],
+        "pinnedVersion": "@fontsource/noto-serif@5.3.0",
+        "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic) NotoSerif-Italic[wdth,wght].ttf: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "license": "OFL-1.1",
+        "upstreamLicensePath": "package/LICENSE",
+        "localLicensePath": "licenses/noto-serif.txt",
+        "usage": "copied",
+        "modifications": "Unmodified static 400/700 normal WOFF2 subsets; CSS paths rewritten for local hosting.",
+        "assetUrl": "https://registry.npmjs.org/@fontsource/noto-serif/-/noto-serif-5.3.0.tgz",
+        "integrity": "sha512-ZrMzjuQlBIcw+qma1slZQdU3YDJvrjLG+9CWU1bxSf3YTkucwqd3EYa/Kfo4Ts19w8IMTGAmtOE3d6wWlgnBtA=="
+      }
+    ],
+    "preset": {
+      "id": "my-original-preset",
+      "name": "My original preset",
+      "composition": "original",
+      "guidance": [
+        "Build a type-led page; keep details secondary and dividers direct.",
+        "Style reference: Brutalism.",
+        "Keep the chosen direction tied to the audience; review the rendered hierarchy against the brief."
+      ]
+    }
+  },
+  "componentGuidance": [
+    "Build a type-led page; keep details secondary and dividers direct.",
+    "Style reference: Brutalism.",
+    "Keep the chosen direction tied to the audience; review the rendered hierarchy against the brief."
+  ],
+  "accessibility": {
+    "light": [
+      {
+        "name": "Body text",
+        "ratio": 17.47444159426303,
+        "pass": true
+      },
+      {
+        "name": "Muted text",
+        "ratio": 5.393587540558717,
+        "pass": true
+      },
+      {
+        "name": "Primary label",
+        "ratio": 15.522910417680388,
+        "pass": true
+      },
+      {
+        "name": "Secondary label",
+        "ratio": 15.984043737116357,
+        "pass": true
+      }
+    ],
+    "dark": [
+      {
+        "name": "Body text",
+        "ratio": 14.307131181141877,
+        "pass": true
+      },
+      {
+        "name": "Muted text",
+        "ratio": 6.534600792238112,
+        "pass": true
+      },
+      {
+        "name": "Primary label",
+        "ratio": 4.781200030217594,
+        "pass": true
+      },
+      {
+        "name": "Secondary label",
+        "ratio": 11.46207022910146,
+        "pass": true
+      }
+    ]
+  },
+  "provenance": [
+    {
+      "id": "ui-ux-pro-max",
+      "project": "UI UX Pro Max",
+      "sourceUrl": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourcePaths": [
+        "src/ui-ux-pro-max/data/styles.csv",
+        "src/ui-ux-pro-max/data/colors.csv"
+      ],
+      "pinnedVersion": "67803eac81607188194aea9842a723b89326d90d",
+      "copyright": "Copyright (c) 2024 Next Level Builder",
+      "license": "MIT",
+      "upstreamLicensePath": "LICENSE",
+      "localLicensePath": "licenses/ui-ux-pro-max.txt",
+      "usage": "adapted",
+      "modifications": "Selected palette/style rows; semantic mapping and condensed guidance. Typography replaced with verified Noto fonts."
+    },
+    {
+      "id": "open-props",
+      "project": "Open Props",
+      "sourceUrl": "https://github.com/argyleink/open-props",
+      "sourcePaths": [
+        "src/props.sizes.js",
+        "src/props.borders.js"
+      ],
+      "pinnedVersion": "530682d04327f842f56bb1ec33cf84a3cadb3876",
+      "copyright": "Copyright (c) 2021 Adam Argyle",
+      "license": "MIT",
+      "upstreamLicensePath": "LICENSE",
+      "localLicensePath": "licenses/open-props.txt",
+      "usage": "adapted",
+      "modifications": "Selected spacing and radius tokens converted from rem to px at 16px."
+    },
+    {
+      "id": "anthropic-frontend-design",
+      "project": "Anthropic Frontend Design",
+      "sourceUrl": "https://github.com/anthropics/skills",
+      "sourcePaths": [
+        "skills/frontend-design/SKILL.md"
+      ],
+      "pinnedVersion": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
+      "copyright": "Anthropic; frontend-design authors",
+      "license": "Apache-2.0",
+      "upstreamLicensePath": "skills/frontend-design/LICENSE.txt",
+      "localLicensePath": "licenses/anthropic-frontend-design.txt",
+      "usage": "adapted",
+      "modifications": "Selected design-direction guidance rewritten for preset exports; full upstream skill excluded."
+    },
+    {
+      "id": "noto-sans",
+      "project": "Fontsource Noto Sans",
+      "sourceUrl": "https://github.com/fontsource/fontsource",
+      "sourcePaths": [
+        "LICENSE",
+        "metadata.json",
+        "files/noto-sans-latin-400-normal.woff2",
+        "files/noto-sans-latin-700-normal.woff2",
+        "files/noto-sans-cyrillic-400-normal.woff2",
+        "files/noto-sans-cyrillic-700-normal.woff2",
+        "files/noto-sans-cyrillic-ext-400-normal.woff2",
+        "files/noto-sans-cyrillic-ext-700-normal.woff2"
+      ],
+      "pinnedVersion": "@fontsource/noto-sans@5.3.0",
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic) NotoSans-Italic[wdth,wght].ttf: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+      "license": "OFL-1.1",
+      "upstreamLicensePath": "package/LICENSE",
+      "localLicensePath": "licenses/noto-sans.txt",
+      "usage": "copied",
+      "modifications": "Unmodified static 400/700 normal WOFF2 subsets; CSS paths rewritten for local hosting.",
+      "assetUrl": "https://registry.npmjs.org/@fontsource/noto-sans/-/noto-sans-5.3.0.tgz",
+      "integrity": "sha512-fBCog2PY7DiVVTEEqtI/Qdinx/knobHYfoGpjFXdfBX5RoJaBp1Prw2G75p0OIsdlMZg3cLo0c+YbIUYOxnQJw=="
+    },
+    {
+      "id": "noto-serif",
+      "project": "Fontsource Noto Serif",
+      "sourceUrl": "https://github.com/fontsource/fontsource",
+      "sourcePaths": [
+        "LICENSE",
+        "metadata.json",
+        "files/noto-serif-latin-400-normal.woff2",
+        "files/noto-serif-latin-700-normal.woff2",
+        "files/noto-serif-cyrillic-400-normal.woff2",
+        "files/noto-serif-cyrillic-700-normal.woff2",
+        "files/noto-serif-cyrillic-ext-400-normal.woff2",
+        "files/noto-serif-cyrillic-ext-700-normal.woff2"
+      ],
+      "pinnedVersion": "@fontsource/noto-serif@5.3.0",
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic) NotoSerif-Italic[wdth,wght].ttf: Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+      "license": "OFL-1.1",
+      "upstreamLicensePath": "package/LICENSE",
+      "localLicensePath": "licenses/noto-serif.txt",
+      "usage": "copied",
+      "modifications": "Unmodified static 400/700 normal WOFF2 subsets; CSS paths rewritten for local hosting.",
+      "assetUrl": "https://registry.npmjs.org/@fontsource/noto-serif/-/noto-serif-5.3.0.tgz",
+      "integrity": "sha512-ZrMzjuQlBIcw+qma1slZQdU3YDJvrjLG+9CWU1bxSf3YTkucwqd3EYa/Kfo4Ts19w8IMTGAmtOE3d6wWlgnBtA=="
+    }
+  ]
+}

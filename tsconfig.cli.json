@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":false,"outDir":"dist-cli","rootDir":"src","declaration":true},"include":["src/cli","src/shared"],"exclude":["tests"]}

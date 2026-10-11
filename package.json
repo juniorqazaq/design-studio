@@ -1,0 +1,46 @@
+{
+  "name": "design-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node --import tsx src/cli/index.ts dev",
+    "cli": "node --import tsx src/cli/index.ts",
+    "build": "tsc --noEmit && vite build && tsc -p tsconfig.cli.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "registry:build": "node --import tsx scripts/build-registry.ts",
+    "registry:validate": "node --import tsx scripts/validate-registry.ts",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "postcss": "^8.5.0",
+    "vite": "^7.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsx": "^4.20.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "description": "Local design workspace for existing frontend projects: preview, typography, semantic themes, reviewed apply and rollback.",
+  "bin": {
+    "design-studio": "dist-cli/cli/index.js"
+  },
+  "files": [
+    "dist/",
+    "dist-cli/",
+    "licenses/",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "docs/"
+  ]
+}

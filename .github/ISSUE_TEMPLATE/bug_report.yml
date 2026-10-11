@@ -1,0 +1,24 @@
+name: Bug report
+description: Report a reproducible Design Studio problem.
+body:
+  - type: markdown
+    attributes:
+      value: Please use a small sanitized fixture. Do not upload secrets, private websites, caches or recovery backups.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node/npm versions, OS, Design Studio version and installation method.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and exact command
+      description: Include expected/actual behavior and a minimal CSS/config fixture if possible.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Sanitized errors or screenshots

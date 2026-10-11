@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "palettes": {
+    "light": {
+      "text": "#202824",
+      "background": "#FAFBF9",
+      "primary": "#356854",
+      "secondary": "#E8EDE7",
+      "accent": "#D5AD59"
+    },
+    "dark": {
+      "text": "#E8EDE7",
+      "background": "#171E1A",
+      "primary": "#8CBCA5",
+      "secondary": "#2B3931",
+      "accent": "#D5AD59"
+    }
+  },
+  "overrides": {
+    "light": {},
+    "dark": {}
+  },
+  "tokenMappings": {
+    "text": "--ds-text",
+    "background": "--ds-background",
+    "primary": "--ds-primary",
+    "secondary": "--ds-secondary",
+    "accent": "--ds-accent",
+    "surface": "--ds-surface",
+    "muted": "--ds-muted",
+    "border": "--ds-border",
+    "primaryHover": "--ds-primary-hover",
+    "onPrimary": "--ds-on-primary",
+    "onSecondary": "--ds-on-secondary",
+    "focus": "--ds-focus"
+  },
+  "typography": {
+    "heading": "serif",
+    "body": "system",
+    "headingWeight": 700,
+    "bodyWeight": 400,
+    "baseSize": 16,
+    "lineHeight": 1.6
+  },
+  "spacing": 24,
+  "radius": 8,
+  "application": {
+    "scope": ":root"
+  }
+}
