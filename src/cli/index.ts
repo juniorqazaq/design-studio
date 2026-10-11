@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {realpathSync} from 'node:fs';
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { inspectProject, readLimited } from './project.js';
 import { exportSkill } from './adapter.js';
 import { validateConfig } from '../shared/design.js';
@@ -34,7 +34,9 @@ async function main() {
   if(command==='dev') {
     const port=Number(o.port??4310);
     if(!Number.isInteger(port)||port<1024||port>65534) throw new Error('--port must be an integer from 1024 to 65534.');
-    const { startEditor }=await import('./server.js');
+    // Vite rejects Windows 8.3 paths; canonicalize its module path and dependency imports.
+    const canonicalEntry=pathToFileURL(realpathSync.native(fileURLToPath(import.meta.url)));
+    const { startEditor }=await import(new URL('./server.js',canonicalEntry).href);
     await startEditor(root,port,!o['no-open']);return;
   }
   if(command==='history'){console.log((await listTransactions(root)).join('\n')||'No apply transactions.');return;}

@@ -111,6 +111,7 @@ try {
     assert.ok(body.length > 0, `Empty editor asset: ${path}`);
     assert.doesNotMatch(response.headers.get('content-type') ?? '', /text\/html/, `Asset returned HTML: ${path}`);
   }
+  assert.match(await (await get(origin + '/@vite/client')).text(), /WebSocket/, 'Vite client must also be accessible.');
   const font = Buffer.from(await (await get(origin + '/fonts/noto-sans-latin-400-normal.woff2')).arrayBuffer());
   assert.equal(font.subarray(0, 4).toString(), 'wOF2', 'Bundled font missing from package.');
   const report = await (await get(origin + '/api/project')).json();
