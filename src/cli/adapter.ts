@@ -2,7 +2,7 @@ import { readFile, writeFile, rename, unlink, mkdir, lstat } from 'node:fs/promi
 import { dirname, extname, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import postcss from 'postcss';
-import { declarations, toCSS, scaleCSS, themes, themeSelector, type DesignConfig } from '../shared/design.js';
+import { declarations, toCSS, scaleCSS, migrationCSS, validateConfig, themes, themeSelector, type DesignConfig } from '../shared/design.js';
 import {unconditional} from '../shared/project-colors.js';
 import { safePath, readLimited, isManagedStylesheet } from './project.js';
 export interface Change { path: string; before: string | null; after: string; }
@@ -52,6 +52,20 @@ export async function planApply(root: string,c: DesignConfig,target?:string): Pr
     for(const node of ast.nodes.slice(begin,end+1))node.remove();
   }
   if(c.application.applyTypography!==false&&c.typography.scale!==undefined)ast.append(postcss.parse('\n\n'+scaleCSS(c)));
+  const migrationStart=ast.nodes.filter(n=>n.type==='comment'&&n.text==='Design Studio color migrations'),migrationEnd=ast.nodes.filter(n=>n.type==='comment'&&n.text==='End Design Studio color migrations');
+  let previous:DesignConfig|undefined;
+  if(managed)try{previous=validateConfig(JSON.parse(await readLimited(await safePath(root,[c.application.directory,'design-studio-assets','design.config.json'].filter(Boolean).join('/')))));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+  if(migrationStart.length||migrationEnd.length){
+    if(!managed||!previous||migrationStart.length!==1||migrationEnd.length!==1)throw new Error('Ambiguous managed color migrations or missing saved configuration. Review them manually.');
+    const begin=ast.nodes.indexOf(migrationStart[0]),end=ast.nodes.indexOf(migrationEnd[0]);
+    const expected=postcss.parse(migrationCSS(previous)).nodes.map(n=>n.toString()).join('\n');
+    if(end<=begin||ast.nodes.slice(begin,end+1).map(n=>n.toString()).join('\n')!==expected)throw new Error('Managed color migrations have custom edits. Preserve them before applying.');
+    for(const node of ast.nodes.slice(begin,end+1))node.remove();
+  }else if(previous?.application.migrations?.length){
+    // Older versions emitted unmarked migration rules; replace only their exact generated content.
+    for(const rule of postcss.parse(migrationCSS(previous)).nodes.filter(n=>n.type==='rule')){const matches=ast.nodes.filter(n=>n.type==='rule'&&n.selector===(rule as postcss.Rule).selector);if(matches.length!==1||matches[0].toString()!==rule.toString())throw new Error('Legacy color migrations have custom edits. Review them manually.');matches[0].remove();}
+  }
+  if(managed&&c.application.migrations?.length)ast.append(postcss.parse('\n\n'+migrationCSS(c)));
   return {path,before,after:ast.toString()};
 }
 export function review(change: Change, root: string) {

@@ -91,7 +91,7 @@ try {
   await writeFile(join(project, 'index.html'), '<html><head><title>CI actual website</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>');
   await mkdir(join(project, 'src'));
   const source = "import React from 'react';import {createRoot} from 'react-dom/client';import './tokens.css';createRoot(document.getElementById('root')).render(<><h1>My actual website</h1><button>Real action</button></>);";
-  const css = ':root {--text:#111111;--background:#fff;--primary:#356854;}body {color:var(--text);background:var(--background);}button{background:var(--primary);}';
+  const css = ':root {--text:#111111;--background:#fff;--primary:#356854;}body {color:var(--text);background:var(--background);}button{background:var(--primary);transition:background-color 120ms;}';
   await writeFile(join(project, 'src/main.jsx'), source);
   await writeFile(join(project, 'src/tokens.css'), css);
   await npm(['install', '--no-audit', '--no-fund'], project);

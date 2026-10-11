@@ -3,6 +3,7 @@ import {realpathSync} from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {resolveFrontend} from './project-root.js';
+import {findEditorPort} from './ports.js';
 import { inspectProject, readLimited } from './project.js';
 import { exportSkill } from './adapter.js';
 import { validateConfig } from '../shared/design.js';
@@ -27,7 +28,7 @@ export function parseArgs(args:string[]) {
 }
 async function main() {
   const {command,options:o}=parseArgs(process.argv.slice(2)), root=resolve(String(o.project??process.cwd()));
-  if(command==='help') { console.log(`Design Studio — local design workspace (npm registry publication is not available)\n\nUsage: design-studio [command] [options]\nNo command starts the editor in the current directory and opens your browser.\n\ndev [--project path] [--port 4310] [--no-open]\ninspect [--project path]\napply --config file [--target existing.css] [--dry-run] [--project path]\npresets [--query text] [--category category] [--language kk] [--limit 5]\npreset --id selected-id\nregistry-validate\nhistory [--project path]\nrollback [--id transaction] [--dry-run] [--project path]\nrecover --id transaction [--project path]\nexport-skill --config file [--out design-skill] [--project path]\nhelp | --help | -h\n\n--port selects the editor port; preview uses the next port.\nInstall the local tarball once, then run design-studio inside your website.\nFrom the tool checkout: npm run cli -- [command] [options].`); return; }
+  if(command==='help') { console.log(`Design Studio — local design workspace (npm registry publication is not available)\n\nUsage: design-studio [command] [options]\nNo command starts the editor in the current directory and opens your browser.\n\ndev [--project path] [--port 4310] [--no-open]\ninspect [--project path]\napply --config file [--target existing.css] [--dry-run] [--project path]\npresets [--query text] [--category category] [--language kk] [--limit 5]\npreset --id selected-id\nregistry-validate\nhistory [--project path]\nrollback [--id transaction] [--dry-run] [--project path]\nrecover --id transaction [--project path]\nexport-skill --config file [--out design-skill] [--project path]\nhelp | --help | -h\n\nWithout --port, a free editor/preview pair is selected starting at 4310.\n--port selects an exact editor port; preview uses the next port.\nInstall the local tarball once, then run design-studio inside your website.\nFrom the tool checkout: npm run cli -- [command] [options].`); return; }
   if(command==='registry-validate'){console.log(`${validateRegistry()} presets valid.`);return;}
   if(command==='preset'){const p=presets.find(p=>p.id===o.id);if(!p)throw new Error('Unknown preset ID. Use presets to search summaries.');console.log(JSON.stringify(p.config,null,2));return;}
   if(command==='presets'){const limit=Number(o.limit??5);if(!Number.isInteger(limit)||limit<1||limit>30)throw new Error('--limit must be 1–30.');const context=o.project?(await inspectProject(root)).config:undefined;const filters=Object.fromEntries(['query','style','category','typography','color','theme','language'].filter(k=>o[k]).map(k=>[k,String(o[k])]));const results=searchPresets(filters,context).slice(0,limit).map(({preset:p,score,reasons})=>({...presetSummary(p),score,reasons}));console.log(JSON.stringify({ranking:'deterministic heuristics; no AI model',totalMatches:searchPresets(filters,context).length,results},null,2));return;}
@@ -38,7 +39,7 @@ async function main() {
     // Vite rejects Windows 8.3 paths; canonicalize its module path and dependency imports.
     const canonicalEntry=pathToFileURL(realpathSync.native(fileURLToPath(import.meta.url)));
     const { startEditor }=await import(new URL('./server.js',canonicalEntry).href);
-    const project=await resolveFrontend(root);process.chdir(project);await startEditor(project,port,!o['no-open']);return;
+    const project=await resolveFrontend(root),selectedPort=await findEditorPort(port,o.port!==undefined);process.chdir(project);await startEditor(project,selectedPort,!o['no-open']);return;
   }
   if(command==='history'){console.log((await listTransactions(root)).join('\n')||'No apply transactions.');return;}
   if(command==='recover'){if(!o.id)throw new Error('--id is required. Use history to list apply records.');console.log('Recovered '+await recoverTransaction(root,String(o.id)));return;}

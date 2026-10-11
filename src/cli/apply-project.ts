@@ -1,7 +1,7 @@
 import {readLimited,safePath} from './project.js';
 import {planApply} from './adapter.js';
 import {completeSkillFiles} from './skill.js';
-import {typographyCSS,type DesignConfig} from '../shared/design.js';
+import {typographyCSS,migrationValue,validateConfig,type DesignConfig} from '../shared/design.js';
 import {proposedFile,ownedFiles,type ApplyPlan} from './transactions.js';
 import {relative,dirname,resolve} from 'node:path';
 import {realpath} from 'node:fs/promises';
@@ -37,6 +37,7 @@ export async function planProjectApply(root:string,c:DesignConfig,target?:string
  const alreadyLinked=new RegExp(`<link\\b[^>]*href=["']/?${cssName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}["'][^>]*>`,'i').test(html);
  if(!managed.length&&!alreadyLinked)changes.push(await proposedFile(root,htmlName,html.replace(/<\/head\s*>/i,link+'\n</head>')));
  notes.push(`Recovery backups and created-file tracking will be saved under design-studio-history/.${existingImport?' Existing managed font import reused.':''}`);
- for(const file of new Set((c.application.migrations??[]).map(m=>m.file))){const path=await safePath(root,file),before=await readLimited(path),ast=postcss.parse(before);for(const m of c.application.migrations!.filter(m=>m.file===file)){const found:postcss.Declaration[]=[];ast.walkRules(rule=>{if(rule.selector===m.selector)rule.walkDecls(m.property,d=>{found.push(d);});});if(found.length!==1||![m.value,`var(${c.tokenMappings[m.role]})`].includes(found[0].value)||found[0].important)throw new Error(`Selected migration changed or is ambiguous: ${file}: ${m.selector} ${m.property}. Reinspect before applying.`);found[0].value=`var(${c.tokenMappings[m.role]})`;}if(changes.some(change=>change.path===path))throw new Error('Choose a separate managed token layer when migrating colors from the target file.');changes.push(await proposedFile(root,file,ast.toString()));}
+ let previous:DesignConfig|undefined;if(c.application.migrations?.length)try{previous=validateConfig(JSON.parse(await readLimited(await safePath(root,`${assetDir}/design.config.json`))));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+ for(const file of new Set((c.application.migrations??[]).map(m=>m.file))){const path=await safePath(root,file),before=await readLimited(path),ast=postcss.parse(before);for(const m of c.application.migrations!.filter(m=>m.file===file)){const found:postcss.Declaration[]=[];ast.walkRules(rule=>{if(rule.selector===m.selector)rule.walkDecls(m.property,d=>{found.push(d);});});const value=migrationValue(c,m.role),old=previous?.application.migrations?.find(old=>old.file===m.file&&old.selector===m.selector&&old.property===m.property&&old.value===m.value),accepted=[m.value,value,...(old?[migrationValue(previous!,old.role)]:[])];if(found.length!==1||!accepted.includes(found[0].value)||found[0].important)throw new Error(`Selected migration changed or is ambiguous: ${file}: ${m.selector} ${m.property}. Reinspect before applying.`);found[0].value=value;}if(changes.some(change=>change.path===path))throw new Error('Choose a separate managed token layer when migrating colors from the target file.');changes.push(await proposedFile(root,file,ast.toString()));}
  return {changes,notes};
 }

@@ -23,25 +23,23 @@ Node.js **22.12 or newer** is required. The CLI uses platform-neutral Node/Vite 
 
 ## One-time installation
 
-In the Design Studio checkout, build a local tarball:
+Download or clone this repository, then build the tarball **inside the Design Studio checkout**, not inside your website:
 
 ```sh
+git clone https://github.com/juniorqazaq/design-studio.git
+cd design-studio
 npm ci
 npm pack
 ```
 
-`npm pack` builds the editor and CLI and creates `design-studio-workspace-0.1.0.tgz`. Install that exact tarball globally, outside your website:
+`npm pack` prints the generated tarball filename (currently `design-studio-workspace-0.1.0.tgz`). On macOS/Linux, use a user-owned installation prefix to avoid administrator permissions:
 
 ```sh
-npm install --global "/absolute/path/to/design-studio-workspace-0.1.0.tgz"
-```
-
-Ensure npm's global executable directory is on your terminal's PATH (`npm config get prefix`: `bin` under that prefix on macOS/Linux, the prefix itself on Windows). If the default prefix needs administrator permissions, use a user-owned prefix on macOS/Linux:
-
-```sh
-npm install --global --prefix "$HOME/.local" "/absolute/path/to/design-studio-workspace-0.1.0.tgz"
+npm install --global --prefix "$HOME/.local" ./design-studio-workspace-0.1.0.tgz
 export PATH="$HOME/.local/bin:$PATH"
 ```
+
+On Windows, or when your existing npm global prefix is already user-owned, run `npm install --global ./design-studio-workspace-0.1.0.tgz`. Ensure npm's executable directory is on PATH (`npm config get prefix`: `bin` under that prefix on macOS/Linux, the prefix itself on Windows). Use the actual filename printed by pack after a version change.
 
 Keep that PATH export in your shell startup file for future terminals. Run `design-studio --help` to confirm installation. Global tarball installation was verified with a separate temporary prefix and PATH on macOS; the website did not receive a Design Studio dependency. No npm publication is required.
 
@@ -54,7 +52,7 @@ cd my-website
 design-studio
 ```
 
-The editor opens automatically at `http://127.0.0.1:4310`; supported React/Vite projects preview at port 4311. Startup prints the resolved project path, editor URL and preview status. Both servers bind to loopback. Bundled editor assets and fonts resolve relative to the installed tool, independently of your current directory.
+The editor starts at `http://127.0.0.1:4310` with preview on 4311 when both are free; otherwise it selects the next free pair within 50 attempts. An explicit `--port` stays strict and reports a conflict. Use the URL printed by the current launch, rather than an older open tab. Startup prints the resolved project path, editor URL and preview status. Both servers bind to loopback. Bundled editor assets and fonts resolve relative to the installed tool, independently of your current directory.
 
 Explicit launch commands and options remain available:
 
@@ -113,9 +111,17 @@ design-studio recover --id <interrupted-transaction-id>
 
 Recovery restores files that match the recorded before/after bytes and refuses unknown edits. Never delete history before checking whether it contains an interrupted transaction. Backups contain project source; keep `design-studio-history/` out of Git and do not upload it with bug reports. Add `design-workspace/` to your project's ignore file if saved designs contain private project details. Application resources under `design-studio-assets/` **should** be committed in the target website when you want to keep the applied design.
 
+## Troubleshooting launch and colors
+
+- Run `npm pack` in Design Studio's checkout. A website's package is not the tool, and the tool tarball will not appear in that website directory.
+- Install once, then run `design-studio` (with a hyphen) from the website. Rebuild and reinstall the tarball into the same prefix when updating the tool; already-running editors must be restarted to use the new version.
+- For a monorepo, a single React/Vite frontend is selected automatically. Startup prints the selected folder; use `--project` when there are multiple frontends.
+- A color changes the components that consume its mapped variable or selected migration. Open Map project colors for unmapped roles, scoped variables and hardcoded colors. Edit Surface independently when cards or sections use their own surface token.
+- Automatic preview starts the frontend. If the site's data requests fail, start its backend/proxy separately using that project's instructions; Design Studio does not install or launch an unknown backend.
+
 ## Design controls
 
-**Map project colors** connects detected CSS variables (such as `--primary`) to Text, Background, Primary, Secondary and Accent. The mapping is retained in saves, prompts, CSS/Skill exports and Apply. Current design colors are kept unless you explicitly choose detected Light/Dark values. Common names such as `--primary`, `--background`, `--foreground` and `--color-primary` are inferred when unambiguous. The preview reports visible consumers and computed-color matches; existence in a file alone is not a successful connection. Missing or overridden consumers receive a diagnosis. Opaque short/six-digit HEX, RGB, HSL, OKLCH and HSL/RGB channels are supported; channels keep their semantics in preview, exports and Apply. Alpha, expressions, conditional/other selectors and `!important` are flagged for manual integration.
+**Map project colors** connects detected CSS variables (such as `--primary`) to Text, Background, Primary, Secondary and Accent. The mapping is retained in saves, prompts, CSS/Skill exports and Apply. Current design colors are kept unless you explicitly choose detected Light/Dark values. Common names such as `--primary`, `--background`, `--foreground`, `--color-primary` and `--color-text-primary` are inferred when unambiguous. Supporting surface, muted, border, hover and focus variables are also inferred and editable in the mapping dialog; their detected values remain explicit overrides until you change them. Each unmapped role is labeled, so a new unused token is not presented as a connected website color. The preview reports visible consumers and computed-color matches; existence in a file alone is not a successful connection. Missing or overridden consumers receive a diagnosis. Opaque short/six-digit HEX, RGB, HSL, OKLCH and HSL/RGB channels are supported; channels keep their semantics in preview, exports and Apply. Scoped full-color variables and hardcoded declarations can be found by file, selector or color in Map project colors and migrated explicitly (up to 40 selected declarations). Preview, saved configurations, prompt/skill exports and reviewed Apply retain that exact selection; repeated Apply updates the managed migration block and refuses custom edits. Numeric scoped channels, alpha, expressions, conditionals and `!important` require manual integration. Images, gradients with fixed stops, canvas/WebGL graphics and other unselected literals keep their original colors. A channel-valued mapped role must use the same encoding in both themes when consumed by a selected migration.
 
 The persistent toolbar exposes **Text, Background, Primary, Secondary, Accent, Light/Dark, Fonts and Randomize**. Light and Dark palettes are independent. Supporting surface, muted, border, label, hover and focus tokens are derived unless overridden. Contrast results flag failing combinations without silently replacing user values.
 

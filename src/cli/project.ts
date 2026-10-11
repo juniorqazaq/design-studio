@@ -58,6 +58,7 @@ export async function inspectProject(root: string, directory=''): Promise<Inspec
               if(!parsed){if(/^(#|rgba?\(|hsla?\(|oklch\(|color\()/i.test(d.value)&&report.detected.length<120)report.detected.push({file:name,variable:d.prop,value:d.value,selector,theme:theme??'other selector',supported:false,priority:1});return;}
               const priority=managed?2:1;
               if(report.detected.length<120)report.detected.push({file:name,variable:d.prop,value:d.value,hex:parsed.hex,format:parsed.format,selector,theme:theme??'other selector',supported,priority});
+              if(theme===undefined&&unconditional(d.parent)&&!d.important&&!parsed.format.endsWith(' channels')&&report.hardcoded!.length<120)report.hardcoded!.push({file:name.replaceAll('\\','/'),selector,property:d.prop,value:d.value});
 
             });
           } catch (e) { report.notes.push(`${name}: ${(e as Error).message}`); }
@@ -68,7 +69,7 @@ export async function inspectProject(root: string, directory=''): Promise<Inspec
   await walk(root,0);
   if (report.cssFiles.length) report.styling.push('CSS'+(report.detected.length?' custom properties':''));
   if (exhausted) report.notes.push('Inspection limited to 1,500 entries and six directory levels.');
-  const aliases={text:['--text','--foreground','--color-text','--color-foreground'],background:['--background','--bg','--color-background'],primary:['--primary','--color-primary'],secondary:['--secondary','--color-secondary'],accent:['--accent','--color-accent']};
+  const aliases={text:['--text','--foreground','--color-text','--color-foreground','--color-text-primary'],background:['--background','--bg','--color-background'],primary:['--primary','--color-primary'],secondary:['--secondary','--color-secondary'],accent:['--accent','--color-accent'],surface:['--surface','--card','--color-surface'],muted:['--muted-foreground','--color-text-muted'],border:['--border','--color-border'],primaryHover:['--primary-hover','--color-primary-hover'],onPrimary:['--primary-foreground','--on-primary','--color-on-primary'],onSecondary:['--secondary-foreground','--on-secondary','--color-on-secondary'],focus:['--ring','--focus','--color-focus']};
   const supported=report.detected.filter(d=>d.supported);
   report.config.application.applyTypography=false;report.config.application.applyLayout=false;
   const light=[...new Set(supported.filter(d=>d.theme==='light').map(d=>d.selector!.replace(':root:root',':root')))];if(light.length===1)report.config.application.lightSelector=light[0] as ':root'|'html'|'body';
@@ -76,13 +77,12 @@ export async function inspectProject(root: string, directory=''): Promise<Inspec
   const dark=[...new Set(supported.filter(d=>d.theme==='dark').map(d=>d.selector!.replace(':root:root',':root')))];
   if(dark.length===1)report.config.application.darkSelector=dark[0];
   if(dark.length>1)report.notes.push('Multiple dark selectors found. Choose a single supported theme integration before Apply.');
-  for(const role of roles){
-    const candidates=[report.config.tokenMappings[role],...aliases[role]].filter(variable=>supported.some(d=>d.variable===variable));
+  for(const role of tokens){
+    const candidates=[...new Set([report.config.tokenMappings[role],...aliases[role]])].filter(variable=>supported.some(d=>d.variable===variable));
     if(candidates.length===1)report.config.tokenMappings[role]=candidates[0];
     if(candidates.length>1)report.notes.push(`${role}: multiple candidate variables (${candidates.join(', ')}); choose in Map project colors.`);
-    for(const theme of ['light','dark'] as const){const found=supported.filter(d=>d.variable===report.config.tokenMappings[role]&&d.theme===theme).sort((a,b)=>a.priority-b.priority).at(-1);if(found){report.config.palettes[theme][role]=found.hex!;report.config.application[theme==='light'?'formats':'darkFormats']![role]=found.format;}}
+    for(const theme of ['light','dark'] as const){const found=supported.filter(d=>d.variable===report.config.tokenMappings[role]&&d.theme===theme).sort((a,b)=>a.priority-b.priority).at(-1);if(found){if(roles.includes(role as typeof roles[number]))report.config.palettes[theme][role as typeof roles[number]]=found.hex!;else report.config.overrides[theme][role as keyof typeof report.config.overrides.light]=found.hex!;report.config.application[theme==='light'?'formats':'darkFormats']![role]=found.format;}}
   }
-  for(const token of tokens.filter(token=>!roles.includes(token as typeof roles[number])))for(const theme of ['light','dark'] as const){const found=supported.filter(d=>d.variable===report.config.tokenMappings[token]&&d.theme===theme).sort((a,b)=>a.priority-b.priority).at(-1);if(found){report.config.overrides[theme][token as keyof typeof report.config.overrides.light]=found.hex!;report.config.application[theme==='light'?'formats':'darkFormats']![token]=found.format;}}
   report.notes.push('Opaque HEX (including short HEX), RGB, HSL, OKLCH and numeric HSL/RGB channels are inspected. Root/body tokens, .dark/data-theme dark selectors and unconditional cascade layers are supported. Alpha, expressions, conditional selectors and !important need manual integration. Inferred names require verification against visible consumers. Unmatched roles and typography use defaults.');
   report.notes.push('No code, environment files, or secrets are uploaded. Inspection never executes project code; the automatic React/Vite preview runs the local Vite configuration.');
   return report;
