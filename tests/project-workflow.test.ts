@@ -45,7 +45,7 @@ test('project semantic aliases include supporting colors and do not create dupli
 
 test('scoped variable migrations share one selection across saves, exports and repeat Apply',async t=>{
  const root=await fixture(t),source='.landing{--landing-ink:#141e2e;background:#fff;} .landing h1{color:var(--landing-ink);} .logo{fill:#123456;}';await writeFile(join(root,'site.css'),source);const r=await inspectProject(root),m=r.hardcoded!.find(m=>m.property==='--landing-ink')!;assert.ok(m);const c=validateConfig({...r.config,application:{...r.config.application,migrations:[{...m,role:'text'}]}});c.palettes.light.text='#AB1234';
- assert.match(toCSS(c),/:root \.landing \{ --landing-ink: var\(--ds-text\); \}/);const saved=await saveDesign(root,'Scoped',c),reopened=await readDesign(root,saved.file);assert.deepEqual(reopened.config,c);assert.deepEqual(JSON.parse(skillFiles(c)['design.config.json']),c);assert.ok(agentPrompt(c).includes(JSON.stringify(c,null,2)));assert.equal(await readFile(join(root,'site.css'),'utf8'),source);
+ assert.match(toCSS(c),/:root:is\(\.landing\), :root :is\(\.landing\) \{ --landing-ink: var\(--ds-text\); \}/);const saved=await saveDesign(root,'Scoped',c),reopened=await readDesign(root,saved.file);assert.deepEqual(reopened.config,c);assert.deepEqual(JSON.parse(skillFiles(c)['design.config.json']),c);assert.ok(agentPrompt(c).includes(JSON.stringify(c,null,2)));assert.equal(await readFile(join(root,'site.css'),'utf8'),source);
  await commitChanges(root,await planProjectApply(root,c));c.application.migrations![0].role='primary';const plan=await planProjectApply(root,c);const css=Buffer.from(plan.changes.find(e=>e.path===join(root,'design.tokens.css'))!.after!).toString();assert.match(css,/--landing-ink: var\(--ds-primary\)/);assert.doesNotMatch(css,/--landing-ink: var\(--ds-text\)/);await commitChanges(root,plan);assert.match(await readFile(join(root,'site.css'),'utf8'),/--landing-ink:var\(--ds-primary\)/);assert.match(await readFile(join(root,'site.css'),'utf8'),/\.logo\{fill:#123456;\}/);
  await writeFile(join(root,'design.tokens.css'),css.replace('--landing-ink: var(--ds-primary)','--landing-ink: hotpink'));await assert.rejects(planProjectApply(root,c),/color migrations have custom edits/);
  assert.throws(()=>validateConfig({...c,application:{...c.application,migrations:[{...m,property:'--ds-primary',role:'primary'}]}}),/distinct source/);validateConfig({...c,application:{...c.application,migrations:[{...m,selector:'.landing > section',role:'text'}]}});assert.throws(()=>validateConfig({...c,application:{...c.application,formats:{primary:'HSL channels'},darkFormats:{primary:'HEX'}}}),/same channel encoding/);
@@ -53,6 +53,15 @@ test('scoped variable migrations share one selection across saves, exports and r
 
 test('migration consumers wrap channel-valued tokens instead of emitting invalid colors',async t=>{
  const root=await fixture(t);await writeFile(join(root,'site.css'),':root{--primary:240 100% 50%;}.landing{background:#123456;}');const r=await inspectProject(root),c=validateConfig({...r.config,application:{...r.config.application,migrations:[{file:'site.css',selector:'.landing',property:'background',value:'#123456',role:'primary'}]}});assert.match(toCSS(c),/background: hsl\(var\(--primary\)\)/);await commitChanges(root,await planProjectApply(root,c));assert.match(await readFile(join(root,'site.css'),'utf8'),/background:hsl\(var\(--primary\)\)/);
+});
+
+test('legacy marked and unmarked migrations upgrade without accepting custom edits',async t=>{
+ for(const marked of [true,false]){
+  const root=await fixture(t);await writeFile(join(root,'site.css'),'.landing{--landing-ink:#141e2e;}');const r=await inspectProject(root),c=validateConfig({...r.config,application:{...r.config.application,migrations:[{...r.hardcoded![0],role:'text'}]}});await commitChanges(root,await planProjectApply(root,c));
+  const path=join(root,'design.tokens.css'),current=await readFile(path,'utf8');let legacy=current.replace(':root:is(.landing), :root :is(.landing)',':root .landing');if(!marked)legacy=legacy.replace('/* Design Studio color migrations */\n','').replace('/* End Design Studio color migrations */\n','');await writeFile(path,legacy);
+  c.palettes.light.text='#AB1234';const plan=await planProjectApply(root,c),after=Buffer.from(plan.changes.find(e=>e.path===path)!.after!).toString();assert.match(after,/:root:is\(\.landing\), :root :is\(\.landing\)/);assert.equal(after.match(/--landing-ink: var\(--ds-text\)/g)?.length,1);assert.equal(await readFile(path,'utf8'),legacy);
+  await writeFile(path,legacy.replace('--landing-ink: var(--ds-text)','--landing-ink: hotpink'));await assert.rejects(planProjectApply(root,c),/custom edits/);
+ }
 });
 
 test('default port selection skips either occupied port; explicit pairs fail without stopping their owner',async t=>{

@@ -106,7 +106,7 @@ Metadata-only snapshot from https://api.fontsource.org/v1/fonts, retrieved 2026-
 
 ## Software dependency licenses
 
-Generated from the installed package manifests and actual license files pinned by package-lock.json. React/react-dom/scheduler are bundled in the browser editor; Vite, PostCSS and their production transitives run the CLI/server. Development-only tools are not runtime requirements. Complete texts and any accompanying notices are retained in licenses/dependencies/. Dependencies installed by npm also retain their own notices.
+Generated from the installed package manifests and actual license files pinned by package-lock.json. React/react-dom/scheduler are bundled in the browser editor; Vite, PostCSS and their production transitives run the CLI/server. PostCSS's standalone list helper is also bundled in the editor to preserve CSS selector lists. Development-only tools are not runtime requirements. Complete texts and any accompanying notices are retained in licenses/dependencies/. Dependencies installed by npm also retain their own notices.
 
 | Software | Purpose/scope | Manifest license | Official repository | Redistribution text |
 | --- | --- | --- | --- | --- |
@@ -119,6 +119,7 @@ Generated from the installed package manifests and actual license files pinned b
 | csstype 3.2.3 | Development/build | MIT | https://github.com/frenic/csstype | [Actual license](licenses/dependencies/csstype-3.2.3.txt) |
 | esbuild 0.28.2 | Runtime dependency | MIT | https://github.com/evanw/esbuild | [Actual license](licenses/dependencies/esbuild-0.28.2.txt) |
 | fdir 6.5.0 | Runtime dependency | MIT | https://github.com/thecodrr/fdir | [Actual license](licenses/dependencies/fdir-6.5.0.txt) |
+| fsevents 2.3.3 | Runtime dependency | MIT | https://github.com/fsevents/fsevents | [Actual license](licenses/dependencies/fsevents-2.3.3.txt) |
 | nanoid 3.3.20 | Runtime dependency | MIT | ai/nanoid | [Actual license](licenses/dependencies/nanoid-3.3.20.txt) |
 | picocolors 1.1.1 | Runtime dependency | ISC | alexeyraspopov/picocolors | [Actual license](licenses/dependencies/picocolors-1.1.1.txt) |
 | picomatch 4.0.7 | Runtime dependency | MIT | micromatch/picomatch | [Actual license](licenses/dependencies/picomatch-4.0.7.txt) |
@@ -188,10 +189,9 @@ These optional packages are not installed on this macOS/arm64 validation host an
 - node_modules/@rollup/rollup-win32-ia32-msvc: 4.64.5; MIT
 - node_modules/@rollup/rollup-win32-x64-gnu: 4.64.5; MIT
 - node_modules/@rollup/rollup-win32-x64-msvc: 4.64.5; MIT
-- node_modules/fsevents: 2.3.3; MIT
 
 ## UX inspiration and branding assets
 
 Realtime Colors (https://www.realtimecolors.com/) inspired persistent semantic color controls, type scale and randomization. Repository inspection found no imported Realtime Colors source or artwork: registry source records, resource fetch scripts and bundled files identify the actual imports above. Its interface and artwork are not redistributed.
 
-The legacy SVG wordmark and inline editor/representative-preview icons are original project code under the existing MIT license. The current user-supplied logo is copied unchanged to public/design-studio-logo.png; public/design-studio-favicon.png is a separate crop of its colored emblem. Both are included in the production editor and npm tarball. The supplied artwork's origin and license have not been documented, and no MIT or other license grant is claimed for either image. The original supplied file remains in ignored .local/. The existing interface screenshot in docs/ predates this logo update and shows the legacy wordmark and bundled licensed fonts.
+The legacy SVG wordmark and inline editor/representative-preview icons are original project code under the existing MIT license. The current user-supplied logo is copied unchanged to public/design-studio-logo.png; public/design-studio-favicon.png is a separate crop of its colored emblem. Both are included in the production editor and npm tarball. The supplied artwork's origin and license have not been documented, and no MIT or other license grant is claimed for either image. The original supplied file remains in ignored .local/. Current README screenshots use the supplied logo and bundled licensed fonts.

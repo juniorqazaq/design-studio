@@ -1,4 +1,4 @@
-import {readLimited,safePath} from './project.js';
+import {readLimited,safePath,isManagedStylesheet} from './project.js';
 import {planApply} from './adapter.js';
 import {completeSkillFiles} from './skill.js';
 import {typographyCSS,migrationValue,validateConfig,type DesignConfig} from '../shared/design.js';
@@ -26,7 +26,11 @@ export async function planProjectApply(root:string,c:DesignConfig,target?:string
  sheet.walkComments(comment=>{if(comment.text===begin)starts.push(comment);if(comment.text===end)ends.push(comment);});
  const typeRules=typographyCSS({...c,typography:{...c.typography,scale:undefined}}).trim();
  if(c.application.applyTypography!==false&&(starts.length||ends.length)){if(starts.length!==1||ends.length!==1||starts[0].parent!==sheet||ends[0].parent!==sheet)throw new Error('Ambiguous Design Studio typography block.');const a=sheet.nodes.indexOf(starts[0]),b=sheet.nodes.indexOf(ends[0]);const old=sheet.nodes.slice(a+1,b).map(node=>node.toString()).join('\n').trim();const rootType=typographyCSS({...c,application:{scope:':root'},typography:{...c.typography,scale:undefined}}).trim(),scopedType=typographyCSS({...c,application:{scope:'.design-scope'},typography:{...c.typography,scale:undefined}}).trim();if(b<=a||!['',rootType,rootType.replaceAll(':root ',''),scopedType].includes(old))throw new Error('Design Studio typography block has custom edits. Preserve them with a manual integration.');for(const node of sheet.nodes.slice(a,b+1))node.remove();}
- if(c.application.applyTypography!==false)sheet.append(postcss.parse(`\n\n/* ${begin} */\n${typeRules}\n/* ${end} */\n`));
+ if(c.application.applyTypography!==false){
+  // Older managed layers also contained these exact unmarked export rules.
+  if(isManagedStylesheet(sheet))for(const rule of postcss.parse(typeRules).nodes)for(const node of [...sheet.nodes])if(node.type==='rule'&&node.toString()===rule.toString())node.remove();
+  sheet.append(postcss.parse(`\n\n/* ${begin} */\n${typeRules}\n/* ${end} */\n`));
+ }
  const changes=[await proposedFile(root,cssName,sheet.toString())],notes=['React/Vite adapter: self-hosted selected font variants, licenses, typography rules and CSS connection. No dependencies are installed or package manifests changed. Existing declarations and unrelated rules are preserved.'];
  const owned=await ownedFiles(root);
  for(const [name,data] of Object.entries(files)){if(c.application.applyTypography===false&&name!=='design.config.json')continue;if(!['design.config.json','design.fonts.css','THIRD_PARTY_NOTICES.md','provenance.json'].includes(name)&&!name.startsWith('fonts/')&&!name.startsWith('licenses/'))continue;const path=`${assetDir}/${name}`,change=await proposedFile(root,path,data);if(change.before!==null&&!Buffer.from(change.before).equals(Buffer.from(change.after!))) {if(!owned.has(path))throw new Error(`Unmanaged file exists: ${path}. Move it explicitly before applying.`);if(owned.get(path)!==createHash('sha256').update(change.before).digest('hex'))throw new Error(`Managed file has user edits: ${path}. Preserve them before applying a new design.`);}changes.push(change);}

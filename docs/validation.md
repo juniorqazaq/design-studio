@@ -1,6 +1,32 @@
 # Release validation
 
-Validated locally on 2026-10-11 with macOS arm64, Node 24.11.1, npm and Chrome. This records actual checks, not a claim that every project or platform is supported.
+Latest local verification: 2026-10-11, macOS arm64, Node 22.12.0 and Chrome. These are observed results, not a claim that every project or platform is supported. Earlier release checks are retained below with their original scope.
+
+## Browser draft recovery
+
+- `npm test`: all 50 tests passed. Three new tests check full configuration/theme recovery, project separation, malformed/oversized/unsupported drafts, validation before replacement and blocked/quota-limited storage.
+- `npm run build`: TypeScript, production editor and compiled CLI passed. The current editor bundle is about 939 kB before gzip (156 kB gzip); the existing Vite size warning remains.
+- The packed ordinary-variable browser fixture now reloads and restores the edited design, checks the actual Light/Dark colors and bundled fonts, clears the draft by undoing to the original, verifies redo and discard, then restores again. Save and Reopen run through the real dialog; prompt preview and downloaded skill contain the exact same configuration; the Apply dialog reviews and applies that selection. A blocked-storage browser still previews and saves named versions successfully.
+- `npm run test:browser`: all four packed fixtures passed again after the concurrent interface changes were included in a fresh build. The isolated moved installation, paths with spaces, independent development/production startup, color-only font preservation and complete rollback passed. These checks used bundled fonts and no publishing credentials.
+- A separate manual check against the bundled example verified the recovery banner and restored Primary/Accent values at normal desktop width and at 390 px. Preview/restore did not apply changes to the example's source. Draft errors do not silently claim successful recovery.
+
+Drafts are browser-origin-local and scoped to the inspected project path, not a replacement for named saves. Clearing browser data, changing browser/hostname/port, private browsing, storage restrictions or another tab replacing the draft can lose recovery data. Font binaries are not embedded in drafts; the existing bundled/cached font behavior still applies. Current Windows/Linux browser rendering and remote Actions were not run. No npm publication, GitHub push, deployment or Apply to the user's website was performed.
+
+## Current selector, color diagnostics and Apply regressions
+
+- `npm test`: all 47 tests passed. Added checks for upgrading old marked/unmarked migration blocks, rejecting custom edits, and removing only exact duplicate generated typography rules. The original duplicate-typography regression failed before the fix (two body rules instead of one).
+- `npm run build`: TypeScript, production editor and compiled CLI passed. The editor JavaScript remains about 928 kB before gzip (153 kB gzip), with Vite's existing size warning.
+- `npm run registry:validate`: 24 presets passed. Bundled font glyph coverage was not reverified because those assets were unchanged.
+- `npm run test:browser`: the packed CLI passed on macOS/Node 22.12.0 using installed Chrome. The tarball filename was discovered from npm output; the isolated installation was moved to another path, and the separate website path contained spaces. No global installation, credentials or external font downloads were needed.
+- Four real website fixtures passed: ordinary variables, no tokens with explicit migrations, scoped variables, and root-anchored selectors containing `:is()`/`:not()` comma lists and a selected `::after` color. Checks include computed Light/Dark colors, bundled heading/body font loading, unchanged source during preview, Save/Reopen/Prompt/Skill configuration consistency, reviewed Apply, independent development and production startup, color-only font preservation and byte-for-byte rollback.
+- Border shorthand diagnostics now inspect individual computed side colors and deduplicate element/property matches. The complex-selector fixture checks its actual border color and diagnostic result. A separate editor check against the bundled React/Vite example showed the changed blue action and red accent border, with Primary 6/6 and Accent 1/1 matching consumers. Pseudo-element diagnostics remain a manual check; their actual colors are covered by the browser regression.
+- Dependency notices were regenerated from actual installed license files, including the installed macOS `fsevents` package. The notices generator now preserves the accurate supplied-logo/package statement and records the bundled PostCSS list helper. No new dependency was added.
+
+The earlier run above preceded concurrent interface edits, which were preserved; the draft checks now also exercise the updated interface. Current Windows/Linux browser rendering and current remote Actions were not run. No npm publication, GitHub push, deployment, or Apply to the user's website was performed. The historical occupied-port and old-logo packaging observations below have been superseded: default startup now searches free port pairs, explicit pairs reject either occupied port, and the supplied PNG/logo crop are included in the production editor and tarball.
+
+## Earlier release checks
+
+The following earlier checks used macOS arm64 and Node 24.11.1 unless otherwise noted.
 
 ## Global installation and launch update
 
@@ -51,6 +77,14 @@ Stopped Design Studio and started the website with its own `npm run dev -- --por
 This caught an initial persistent scale failure: the website's later `h1` rule overrode the selected size. Managed typography now uses the selected scope's specificity; the corrected packed CLI was reinstalled and the independent website then rendered the expected **54.93px** heading.
 
 Packed rollback dry-run left files unchanged. A temporary edit after Apply produced a conflict and was preserved. After explicitly removing that test edit, rollback restored the original CSS, HTML and manifest byte-for-byte, removed created assets and preserved unrelated work. The restored example also built successfully with its own Vite.
+
+## Opaque Background layers — 2026-10-11
+
+Reproduced Background changing the mapped body color while literal white page wrappers and sections covered it. The preview now reports sampled large opaque backgrounds and opens the existing mapping dialog filtered by `background`; users select the exact declarations to migrate. This does not rewrite source or recolor unrelated surfaces automatically.
+
+The focused packed-CLI browser scenario uses a separate React/Vite project and relocated installation, both with spaces in their paths. It checks the warning and explicit mapping, Light/Dark computed wrapper and section colors, an unchanged small white brand surface, Undo/Redo, Original/Edited, saved configuration/prompt/skill consistency, reviewed Apply, independent development/production startup, color-only font preservation and rollback. Build/type checks and 21 targeted project/workspace tests passed on macOS with Node 22.12.0.
+
+The broader optional browser run stopped in the separate preset-showcase interaction test: editor chrome intercepted the Sign in click. That full run is not recorded as passing. No current Windows/Linux browser run, GitHub push or website Apply was performed. Background diagnostics sample nine viewport positions; gradients, images, pseudo-elements and off-screen layers require manual inspection.
 
 ## Remaining validation limits
 

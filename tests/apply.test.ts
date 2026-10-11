@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,readdir,rename,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,basename} from 'node:path';
-import {defaultConfig} from '../src/shared/design.js';
+import {defaultConfig,typographyCSS} from '../src/shared/design.js';
 import {planProjectApply} from '../src/cli/apply-project.js';
 import {commitChanges,proposedFile,reviewPlan,planRollback,rollbackProject,listTransactions,recoverTransaction} from '../src/cli/transactions.js';
 async function fixture(){const root=await mkdtemp(join(tmpdir(),'design studio apply '));await mkdir(join(root,'src'));await writeFile(join(root,'package.json'),JSON.stringify({dependencies:{react:'19',vite:'7'}}));await writeFile(join(root,'index.html'),'<html><head><title>User site</title></head><body><script type="module" src="/src/main.jsx"></script></body></html>');await writeFile(join(root,'src/tokens.css'),':root{--ds-primary:#123456;--user:17px;}\n@font-face{font-family:"User font";src:url("./user.woff2")}\n.card{padding:17px;color:hotpink;}');await writeFile(join(root,'unrelated.txt'),'local user changes');return root;}
@@ -35,6 +35,13 @@ test('unsupported stacks explain font integration before creating files',async()
 test('default layer outranks project tokens, can be reapplied and rolls back without touching original CSS',async()=>{
  const {inspectProject}=await import('../src/cli/project.js');const root=await fixture(),c=structuredClone(defaultConfig);c.typography.heading='notoSans';c.palettes.light.primary='#123ABC';c.palettes.dark.primary='#AB123C';const before=await readFile(join(root,'src/tokens.css'),'utf8');
  const plan=await planProjectApply(root,c);const text=new TextDecoder().decode(plan.changes.find(f=>basename(f.path)==='design.tokens.css')!.after!);assert.match(text,/:root:root \{/);assert.match(text,/:root:root\[data-theme="dark"\]/);assert.equal(plan.changes.some(f=>f.path.endsWith(join('src','tokens.css'))),false);
+ assert.equal(text.match(/:root body \{/g)?.length,1,'New managed layers must not duplicate body typography.');
  const id=await commitChanges(root,plan);assert.equal(await readFile(join(root,'src/tokens.css'),'utf8'),before);assert.equal((await inspectProject(root)).config.palettes.light.primary,'#123ABC');
  assert.equal(await commitChanges(root,await planProjectApply(root,c)),null);c.palettes.light.primary='#778899';const updated=await planProjectApply(root,c);assert.match(new TextDecoder().decode(updated.changes.find(f=>basename(f.path)==='design.tokens.css')!.after!),/:root:root \{[^}]*--ds-primary: #778899/s);assert.match(reviewPlan(root,await planProjectApply(root,c,'design.tokens.css')),/#778899/);await rollbackProject(root,id!);await assert.rejects(stat(join(root,'design.tokens.css')),/ENOENT/);assert.equal(await readFile(join(root,'src/tokens.css'),'utf8'),before);
+});
+
+test('reapplying legacy duplicate typography keeps one managed set and preserves custom rules',async()=>{
+ const root=await fixture(),c=structuredClone(defaultConfig);await commitChanges(root,await planProjectApply(root,c));const path=join(root,'design.tokens.css'),applied=await readFile(path,'utf8');
+ const before=applied+'\n'+typographyCSS(c)+'\n:root body { color: hotpink; }\n';await writeFile(path,before);const plan=await planProjectApply(root,c),after=Buffer.from(plan.changes.find(e=>basename(e.path)==='design.tokens.css')!.after!).toString();assert.equal(after.match(/font-family: var\(--ds-font-body\)/g)?.length,1);assert.equal(after.match(/font-family: var\(--ds-font-heading\)/g)?.length,1);assert.match(after,/:root body \{ color: hotpink; \}/);assert.equal(await readFile(path,'utf8'),before);
+ await commitChanges(root,plan);assert.equal(await commitChanges(root,await planProjectApply(root,c)),null);
 });

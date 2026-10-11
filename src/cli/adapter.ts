@@ -58,12 +58,15 @@ export async function planApply(root: string,c: DesignConfig,target?:string): Pr
   if(migrationStart.length||migrationEnd.length){
     if(!managed||!previous||migrationStart.length!==1||migrationEnd.length!==1)throw new Error('Ambiguous managed color migrations or missing saved configuration. Review them manually.');
     const begin=ast.nodes.indexOf(migrationStart[0]),end=ast.nodes.indexOf(migrationEnd[0]);
-    const expected=postcss.parse(migrationCSS(previous)).nodes.map(n=>n.toString()).join('\n');
-    if(end<=begin||ast.nodes.slice(begin,end+1).map(n=>n.toString()).join('\n')!==expected)throw new Error('Managed color migrations have custom edits. Preserve them before applying.');
+    const expected=[false,true].map(legacy=>postcss.parse(migrationCSS(previous,legacy)).nodes.map(n=>n.toString()).join('\n'));
+    if(end<=begin||!expected.includes(ast.nodes.slice(begin,end+1).map(n=>n.toString()).join('\n')))throw new Error('Managed color migrations have custom edits. Preserve them before applying.');
     for(const node of ast.nodes.slice(begin,end+1))node.remove();
   }else if(previous?.application.migrations?.length){
     // Older versions emitted unmarked migration rules; replace only their exact generated content.
-    for(const rule of postcss.parse(migrationCSS(previous)).nodes.filter(n=>n.type==='rule')){const matches=ast.nodes.filter(n=>n.type==='rule'&&n.selector===(rule as postcss.Rule).selector);if(matches.length!==1||matches[0].toString()!==rule.toString())throw new Error('Legacy color migrations have custom edits. Review them manually.');matches[0].remove();}
+    const variants=[false,true].map(legacy=>postcss.parse(migrationCSS(previous!,legacy)).nodes.filter(n=>n.type==='rule'));
+    const rules=variants.find(rules=>rules.every(rule=>{const matches=ast.nodes.filter(n=>n.type==='rule'&&n.selector===(rule as postcss.Rule).selector);return matches.length===1&&matches[0].toString()===rule.toString();}));
+    if(!rules)throw new Error('Legacy color migrations have custom edits. Review them manually.');
+    for(const rule of rules)ast.nodes.find(n=>n.type==='rule'&&n.selector===(rule as postcss.Rule).selector)!.remove();
   }
   if(managed&&c.application.migrations?.length)ast.append(postcss.parse('\n\n'+migrationCSS(c)));
   return {path,before,after:ast.toString()};

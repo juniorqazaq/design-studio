@@ -14,6 +14,7 @@ Design Studio is one TypeScript project, with React/Vite for the browser and a N
 - `src/shared/font-catalog.ts`: bundled Fontsource family metadata and validated static/variable font choices.
 - `src/cli/font-cache.ts`: on-demand exact-package variant downloads, restricted font-face CSS, SHA-256 asset integrity, cached licenses and attribution; no catalog-wide asset download.
 - `src/cli/workspace.ts`: named version envelopes, append-only exclusive saves, safe reopening.
+- `src/web/draft.ts`: bounded, validated browser-local drafts keyed by the inspected project path. App offers explicit restore/discard before replacing a previous draft; restored edits use the existing configuration/history and require a new Apply review. Storage errors do not block manual editing or named saves.
 - `src/cli/index.ts`: strict command/option parsing and local workflow.
 - `examples`: React CSS-variable consumer plus example exported config/skill.
 - `tests`: meaningful schema, theme, contrast, ZIP, inspection/privacy, versioned saves, font variants, prompt determinism and filesystem/CLI preservation checks.
