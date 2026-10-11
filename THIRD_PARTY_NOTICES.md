@@ -190,8 +190,8 @@ These optional packages are not installed on this macOS/arm64 validation host an
 - node_modules/@rollup/rollup-win32-x64-msvc: 4.64.5; MIT
 - node_modules/fsevents: 2.3.3; MIT
 
-## UX inspiration and original assets
+## UX inspiration and branding assets
 
 Realtime Colors (https://www.realtimecolors.com/) inspired persistent semantic color controls, type scale and randomization. Repository inspection found no imported Realtime Colors source or artwork: registry source records, resource fetch scripts and bundled files identify the actual imports above. Its interface and artwork are not redistributed.
 
-The SVG wordmark and inline editor/representative-preview icons are original project code under the existing MIT license. A user-supplied raster logo has no documented origin/license and is preserved only in ignored .local/, outside the GitHub release and npm tarball. The real interface screenshot in docs/ uses the original wordmark and bundled licensed fonts.
+The legacy SVG wordmark and inline editor/representative-preview icons are original project code under the existing MIT license. The current user-supplied logo is copied unchanged to public/design-studio-logo.png; public/design-studio-favicon.png is a separate crop of its colored emblem. Both are included in the production editor and npm tarball. The supplied artwork's origin and license have not been documented, and no MIT or other license grant is claimed for either image. The original supplied file remains in ignored .local/. The existing interface screenshot in docs/ predates this logo update and shows the legacy wordmark and bundled licensed fonts.

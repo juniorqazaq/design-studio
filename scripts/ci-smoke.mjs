@@ -112,6 +112,12 @@ try {
     assert.doesNotMatch(response.headers.get('content-type') ?? '', /text\/html/, `Asset returned HTML: ${path}`);
   }
   assert.match(await (await get(origin + '/@vite/client')).text(), /WebSocket/, 'Vite client must also be accessible.');
+  for (const name of ['design-studio-logo.png', 'design-studio-favicon.png']) {
+    const expected = await readFile(join(repository, 'public', name));
+    assert.deepEqual(await readFile(join(installed, 'dist', name)), expected, `Missing or changed packaged branding: ${name}`);
+    assert.deepEqual(Buffer.from(await (await get(origin + '/' + name)).arrayBuffer()), expected, `Branding not served correctly: ${name}`);
+  }
+  assert.match(html, /rel="icon" href="\/design-studio-favicon\.png"/);
   const font = Buffer.from(await (await get(origin + '/fonts/noto-sans-latin-400-normal.woff2')).arrayBuffer());
   assert.equal(font.subarray(0, 4).toString(), 'wOF2', 'Bundled font missing from package.');
   const report = await (await get(origin + '/api/project')).json();

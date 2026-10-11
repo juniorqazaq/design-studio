@@ -1,5 +1,7 @@
 # Design Studio
 
+<img src="public/design-studio-logo.png" alt="Design Studio logo" width="360">
+
 Design Studio is a local browser editor for **existing frontend projects**. Run its CLI in a website directory, inspect the project, preview temporary design changes, save a selection, and review a persistent Apply. Colors, typography, presets, recommendations, prompts and exports work without an AI API key.
 
 ![Design Studio editing an actual React/Vite website](docs/workspace.png)
@@ -173,7 +175,7 @@ Original project code and compositions retain the existing [MIT license](LICENSE
 | Fontsource Noto Sans / Noto Serif | Bundled starter assets | OFL-1.1 |
 | Fontsource API | Metadata catalog; additional assets on demand | Font licenses are package-specific |
 
-[Realtime Colors](https://www.realtimecolors.com/) is **UX inspiration**, separately from imported open-source resources. Repository inspection found no imported Realtime Colors code or artwork; its source and visual assets are not redistributed. Design Studio has its own interface and actual-project workflow. The original SVG wordmark and inline icons are project code. The earlier user-supplied raster logo has unverified licensing and is preserved locally but excluded from the release.
+[Realtime Colors](https://www.realtimecolors.com/) is **UX inspiration**, separately from imported open-source resources. Repository inspection found no imported Realtime Colors code or artwork; its source and visual assets are not redistributed. Design Studio has its own interface and actual-project workflow. The legacy SVG wordmark and inline icons are original project code. The current PNG logo is user-supplied artwork copied unchanged to `public/design-studio-logo.png`; `public/design-studio-favicon.png` is a separate emblem crop. Both are included in the built editor and packaged CLI. Their origin and license have not been documented; no license claim is made for these images. The workspace screenshot above predates this logo update and shows the legacy wordmark.
 
 ## Architecture and development
 
