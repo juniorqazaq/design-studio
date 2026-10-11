@@ -2,6 +2,10 @@
 
 Use Node.js 22.12+ and run `npm install`, `npm test`, and `npm run build`. Start `npm run dev` to check the interface. Validate changes in both themes and at desktop/mobile widths, using keyboard input as well as pointer controls.
 
+GitHub Actions runs `npm ci`, `npm test`, `npm run typecheck`, `npm run registry:validate`, `npm run build`, and `npm run ci:smoke` on Ubuntu, Windows, and macOS with Node.js 22.12.0. Runs start on pushes to `main`, pull requests, or manual dispatch; superseded runs are cancelled. Jobs have a 20-minute timeout and read-only repository permissions.
+
+To reproduce the packaged check locally, run `npm run build` then `npm run ci:smoke`. The Node script discovers the tarball through `npm pack --json`, installs it into an isolated temporary tools directory, runs the installed `design-studio` bin entry with `--help`, and starts it with `--no-open` against a React/Vite fixture in a path containing spaces. It checks the editor HTTP endpoint, built JS/CSS, a bundled font, and the actual website preview, then stops the process and removes temporary files even on failure. It invokes the package's JS executable through Node to avoid platform-specific shell wrappers. npm dependency installation requires network access; font downloads, credentials, a browser, a global install, and npm publication are not needed.
+
 Keep configuration as the source of truth. Changes to schema, token derivation, exports, or mappings must also reach the CLI, preview, example configuration/skill, and documentation. Regenerate examples with the shared functions after changing defaults. A schema-breaking change needs an explicit version/migration; do not silently reinterpret saved configurations.
 
 New adapters need tests proving dry-run does not write, apply preserves unrelated rules/comments/local edits, unsupported patterns fail safely, and retries cannot overwrite changes since planning. Never execute inspected code or read environment/secrets for analysis. Do not introduce source uploads, telemetry, network font requirements, or API-key requirements into the core workflow.

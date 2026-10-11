@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { defaultConfig,validateConfig,contrast,contrastChecks,resolveTokens,generateDark,toCSS,skillFiles } from '../src/shared/design.js';
 import { zipFiles } from '../src/shared/zip.js';
+import {assertZip} from './assert-zip.js';
 import { inspectProject,safePath } from '../src/cli/project.js';
 import { planApply,writeChange,exportSkill } from '../src/cli/adapter.js';
 import { parseArgs } from '../src/cli/index.js';
@@ -30,9 +31,9 @@ test('WCAG contrast known pairs and button labels',()=>{
   for(const theme of ['light','dark'] as const){const t=resolveTokens(fresh(),theme);assert.ok(contrast(t.onPrimary,t.primary)>=4.5);assert.ok(contrastChecks(fresh(),theme).every(c=>c.pass));}
 });
 test('local inspection skips secrets, dependencies, and symlinks',async()=>{
-  const root=await fixture();await writeFile(join(root,'.env'),'SECRET=hidden');await mkdir(join(root,'node_modules'));await writeFile(join(root,'node_modules/fake.css'),':root {--ds-text:#FF0000}');await symlink(join(root,'src/tokens.css'),join(root,'linked.css'));
-  const report=await inspectProject(root);assert.equal(report.framework,'React');assert.equal(report.detected.length,1);assert.equal(report.config.palettes.light.primary,'#356854');assert.deepEqual(report.cssFiles,['src/tokens.css']);
-  await assert.rejects(safePath(root,'../other.css'),/inside/);await assert.rejects(safePath(root,'linked.css'),/Symlink/);
+  const root=await fixture();await writeFile(join(root,'.env'),'SECRET=hidden');await mkdir(join(root,'node_modules'));await writeFile(join(root,'node_modules/fake.css'),':root {--ds-text:#FF0000}');await symlink(join(root,'src'),join(root,'linked'),process.platform==='win32'?'junction':'dir');
+  const report=await inspectProject(root);assert.equal(report.framework,'React');assert.equal(report.detected.length,1);assert.equal(report.config.palettes.light.primary,'#356854');assert.deepEqual(report.cssFiles,[join('src','tokens.css')]);
+  await assert.rejects(safePath(root,'../other.css'),/inside/);await assert.rejects(safePath(root,'linked/tokens.css'),/Symlink/);
 });
 test('dry-run does not write; apply updates tokens and preserves unrelated local edits',async()=>{
   const root=await fixture(),c=fresh();c.palettes.light.primary='#AA3344';const before=await readFile(join(root,'src/tokens.css'),'utf8');
@@ -56,9 +57,11 @@ test('CLI dry-run leaves fixture byte-for-byte unchanged and explicit apply work
 test('skill folder and ZIP include referenced configuration and tokens',async()=>{
   const root=await fixture(),files=skillFiles(fresh()),path=await exportSkill(root,'design-skill',files);assert.deepEqual((await readdir(path)).sort(),Object.keys(files).sort());assert.match(files['SKILL.md'],/design.config.json/);assert.match(files['SKILL.md'],/design.tokens.css/);validateConfig(JSON.parse(await readFile(join(path,'design.config.json'),'utf8')));
   await assert.rejects(exportSkill(root,'design-skill',files),/EEXIST/);
-  const zip=join(root,'skill.zip');await writeFile(zip,zipFiles(files));const list=execFileSync('unzip',['-Z1',zip],{encoding:'utf8'});for(const name of Object.keys(files))assert.ok(list.includes(name));assert.match(execFileSync('unzip',['-t',zip],{encoding:'utf8'}),/No errors/);assert.throws(()=>zipFiles({'../bad':'x'}),/Unsafe/);
+  const zip=join(root,'skill.zip');await writeFile(zip,zipFiles(files));assertZip(await readFile(zip),files);const corrupted=await readFile(zip);corrupted[30+corrupted.readUInt16LE(26)]^=1;assert.throws(()=>assertZip(corrupted,files));assert.throws(()=>zipFiles({'../bad':'x'}),/Unsafe/);
 });
 test('CLI starts when invoked through an executable symlink from another directory',async()=>{
- const root=await fixture(),entry=join(root,'studio.ts');await symlink(join(process.cwd(),'src/cli/index.ts'),entry);
+ const root=await fixture(),entry=process.platform==='win32'?join(root,'linked-cli/index.ts'):join(root,'studio.ts');
+ // Windows directory junctions exercise linked entry paths without symlink privileges.
+ if(process.platform==='win32')await symlink(join(process.cwd(),'src/cli'),join(root,'linked-cli'),'junction');else await symlink(join(process.cwd(),'src/cli/index.ts'),entry,'file');
  const output=execFileSync(process.execPath,['--import',import.meta.resolve('tsx'),entry,'help'],{cwd:root,encoding:'utf8'});assert.match(output,/Design Studio/);assert.match(output,/rollback/);
 });

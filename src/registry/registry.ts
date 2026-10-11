@@ -19,7 +19,11 @@ export function validatePreset(input:unknown):Preset {
   const kind=p.config.typography.heading==='notoSerif'||p.config.typography.heading==='serif'?'serif':p.config.typography.heading==='mono'?'monospace':'sans-serif';
   if(kind!==p.typography)throw new Error('Typography filter must match the configured font.');
   for(const font of [p.config.typography.heading,p.config.typography.body])if(font==='notoSans'||font==='notoSerif')if(!p.provenance.some(s=>s.id===(font==='notoSans'?'noto-sans':'noto-serif')))throw new Error('Missing font provenance.');
-  for(const theme of ['light','dark'] as const)if(JSON.stringify(p.accessibility?.[theme])!==JSON.stringify(contrastChecks(p.config,theme)))throw new Error('Accessibility results are stale. Recalculate them.');
+  for(const theme of ['light','dark'] as const){
+    const expected=contrastChecks(p.config,theme),actual=p.accessibility?.[theme];
+    // V8 versions can differ in the final floating-point digits; labels and pass results stay exact.
+    if(!Array.isArray(actual)||actual.length!==expected.length||actual.some((check,i)=>!check||!Number.isFinite(check.ratio)||Math.abs(check.ratio-expected[i].ratio)>1e-12||JSON.stringify({...check,ratio:expected[i].ratio})!==JSON.stringify(expected[i])))throw new Error('Accessibility results are stale. Recalculate them.');
+  }
   return p;
 }
 export function validateRegistry(items:unknown[]=presets){const seen=new Set();for(const value of items){const p=validatePreset(value);if(seen.has(p.id))throw new Error(`Duplicate preset ID: ${p.id}`);seen.add(p.id);}return items.length;}

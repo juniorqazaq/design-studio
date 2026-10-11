@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "registry:build": "node --import tsx scripts/build-registry.ts",
     "registry:validate": "node --import tsx scripts/validate-registry.ts",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "ci:smoke": "node scripts/ci-smoke.mjs"
   },
   "dependencies": {
     "postcss": "^8.5.0",

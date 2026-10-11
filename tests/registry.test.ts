@@ -11,15 +11,17 @@ import {toHSV,fromHSV,toOKLab,fromOKLCH,formatColor} from '../src/shared/color.j
 import {exportCode,agentPrompt} from '../src/shared/export-code.js';
 import {completeSkillFiles} from '../src/cli/skill.js';
 import {zipFiles} from '../src/shared/zip.js';
+import {assertZip} from './assert-zip.js';
 import {exportSkill} from '../src/cli/adapter.js';
 import {validateConfig} from '../src/shared/design.js';
 
 test('24 reproducible original compositions validate and differ beyond colors',()=>{
- assert.equal(validateRegistry(),24);assert.deepEqual(buildRegistry(),presets);
+ assert.equal(validateRegistry(),24);const built=buildRegistry();assert.equal(validateRegistry(built),24);assert.deepEqual(built.map((p,i)=>({...p,accessibility:presets[i].accessibility})),presets);
  assert.ok(new Set(presets.map(p=>JSON.stringify([p.config.typography,p.config.spacing,p.config.radius,p.componentGuidance]))).size>=20);
  const p=structuredClone(presets[0]);p.id='bad id';assert.throws(()=>validatePreset(p),/identity/);
  assert.throws(()=>validateRegistry([presets[0],presets[0]]),/Duplicate/);
  const stale=structuredClone(presets[0]);stale.accessibility.light[0].pass=!stale.accessibility.light[0].pass;assert.throws(()=>validatePreset(stale),/stale/);
+ const noise=structuredClone(presets[0]);noise.accessibility.light[0].ratio+=1e-14;validatePreset(noise);noise.accessibility.light[0].ratio+=.01;assert.throws(()=>validatePreset(noise),/stale/);noise.accessibility.light[0].ratio=NaN;assert.throws(()=>validatePreset(noise),/stale/);
  const claimed=structuredClone(presets.find(p=>p.typography==='monospace')!);claimed.languages=['kk'];assert.throws(()=>validatePreset(claimed),/verified/);
  assert.throws(()=>validateProvenance([{id:'constructor'}]),/Unknown/);
  const changed=structuredClone(presets[0].provenance);changed[0].license='no obligations';assert.throws(()=>validateProvenance(changed),/differs/);
@@ -44,7 +46,7 @@ test('selected export carries only its required licenses and valid local font bi
  const fonts=Object.entries(files).filter(([k])=>k.startsWith('fonts/'));assert.equal(fonts.length,6);for(const [,bytes] of fonts)assert.equal(Buffer.from(bytes).subarray(0,4).toString(),'wOF2');
  const c=validateConfig(JSON.parse(files['design.config.json'] as string));assert.deepEqual(c,p.config);assert.match(files['SKILL.md'] as string,/design.fonts.css/);
  const root=await mkdtemp(join(tmpdir(),'design-studio-registry-'));const out=await exportSkill(root,'selected',files);assert.ok((await readFile(join(out,'fonts/noto-serif-latin-700-normal.woff2'))).length>1000);
- await writeFile(join(root,'selected.zip'),zipFiles(files));assert.match(execFileSync('unzip',['-t',join(root,'selected.zip')],{encoding:'utf8'}),/No errors/);
+ await writeFile(join(root,'selected.zip'),zipFiles(files));assertZip(await readFile(join(root,'selected.zip')),files);
 });
 test('CLI loads summaries before a single selected config',()=>{
  const run=(args:string[])=>execFileSync(process.execPath,['--import',import.meta.resolve('tsx'),'src/cli/index.ts',...args],{encoding:'utf8'});

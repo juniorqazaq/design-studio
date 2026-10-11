@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,readdir,rename,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,basename} from 'node:path';
 import {defaultConfig} from '../src/shared/design.js';
 import {planProjectApply} from '../src/cli/apply-project.js';
 import {commitChanges,proposedFile,reviewPlan,planRollback,rollbackProject,listTransactions,recoverTransaction} from '../src/cli/transactions.js';
@@ -34,7 +34,7 @@ test('unsupported stacks explain font integration before creating files',async()
 });
 test('default layer outranks project tokens, can be reapplied and rolls back without touching original CSS',async()=>{
  const {inspectProject}=await import('../src/cli/project.js');const root=await fixture(),c=structuredClone(defaultConfig);c.typography.heading='notoSans';c.palettes.light.primary='#123ABC';c.palettes.dark.primary='#AB123C';const before=await readFile(join(root,'src/tokens.css'),'utf8');
- const plan=await planProjectApply(root,c);const text=new TextDecoder().decode(plan.changes.find(f=>f.path.endsWith('/design.tokens.css'))!.after!);assert.match(text,/:root:root \{/);assert.match(text,/:root:root\[data-theme="dark"\]/);assert.equal(plan.changes.some(f=>f.path.endsWith('/src/tokens.css')),false);
+ const plan=await planProjectApply(root,c);const text=new TextDecoder().decode(plan.changes.find(f=>basename(f.path)==='design.tokens.css')!.after!);assert.match(text,/:root:root \{/);assert.match(text,/:root:root\[data-theme="dark"\]/);assert.equal(plan.changes.some(f=>f.path.endsWith(join('src','tokens.css'))),false);
  const id=await commitChanges(root,plan);assert.equal(await readFile(join(root,'src/tokens.css'),'utf8'),before);assert.equal((await inspectProject(root)).config.palettes.light.primary,'#123ABC');
- assert.equal(await commitChanges(root,await planProjectApply(root,c)),null);c.palettes.light.primary='#778899';const updated=await planProjectApply(root,c);assert.match(new TextDecoder().decode(updated.changes.find(f=>f.path.endsWith('/design.tokens.css'))!.after!),/:root:root \{[^}]*--ds-primary: #778899/s);assert.match(reviewPlan(root,await planProjectApply(root,c,'design.tokens.css')),/#778899/);await rollbackProject(root,id!);await assert.rejects(stat(join(root,'design.tokens.css')),/ENOENT/);assert.equal(await readFile(join(root,'src/tokens.css'),'utf8'),before);
+ assert.equal(await commitChanges(root,await planProjectApply(root,c)),null);c.palettes.light.primary='#778899';const updated=await planProjectApply(root,c);assert.match(new TextDecoder().decode(updated.changes.find(f=>basename(f.path)==='design.tokens.css')!.after!),/:root:root \{[^}]*--ds-primary: #778899/s);assert.match(reviewPlan(root,await planProjectApply(root,c,'design.tokens.css')),/#778899/);await rollbackProject(root,id!);await assert.rejects(stat(join(root,'design.tokens.css')),/ENOENT/);assert.equal(await readFile(join(root,'src/tokens.css'),'utf8'),before);
 });
