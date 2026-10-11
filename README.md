@@ -2,9 +2,11 @@
 
 <img src="public/design-studio-logo.png" alt="Design Studio logo" width="360">
 
-Design Studio is a local browser editor for **existing frontend projects**. Run its CLI in a website directory, inspect the project, preview temporary design changes, save a selection, and review a persistent Apply. Colors, typography, presets, recommendations, prompts and exports work without an AI API key.
+**Customize your own website in a local browser workspace.** Design Studio opens your existing frontend project, lets you try colors and typography, and shows the exact changes before you apply them. Presets, recommendations, prompts and exports work without an AI API key.
 
-![Design Studio editing an actual React/Vite website](docs/workspace.png)
+![Design Studio: actual React/Vite website, live color controls, contrast checks and recommendations](docs/workspace.jpg)
+
+*Actual running website from [`examples/react-css-vars`](examples/react-css-vars), with a temporary Primary color change. The preview is connected to the project; source files remain unchanged.*
 
 After the one-time global installation below, launch from your website:
 
@@ -13,13 +15,28 @@ cd my-website
 design-studio
 ```
 
-## Current status
+## What you can do
+
+| In the workspace | What it gives you |
+| --- | --- |
+| Preview your website | Original/Edited comparison; desktop, tablet and mobile preview sizes |
+| Customize the design | Independent Light/Dark palettes, heading/body fonts, spacing, radius and typography scale |
+| Explore alternatives | 24 searchable presets, local recommendations and filtered randomization with locks |
+| Check the result | Contrast results, font loading/coverage status and project color mapping |
+| Keep or share it | Named design versions, CSS, an agent skill or a self-contained implementation prompt |
+| Apply when ready | Review every proposed file change; apply explicitly and retain rollback history |
+
+**Preview edits are temporary.** Save Design saves a configuration; Apply to Project is the separate action that changes website files.
+
+[Install](#one-time-installation) · [Launch](#everyday-usage) · [Workflow](#typical-workflow) · [Fonts](#fonts-downloads-and-language-coverage) · [Troubleshooting](#troubleshooting-launch-and-colors) · [Attribution](#open-source-resources-and-inspiration)
+
+## Supported projects
 
 This is an early, locally installable release. Automatic actual-project preview and persistent font application support **React + Vite + index.html**; color editing uses supported CSS variables or explicitly selected CSS migrations. The adapter preserves existing layout, functionality, unrelated rules and local edits. A CSS-only adapter remains available for platform-font configurations in other projects; it does not connect styles automatically. Next.js, Vue, Svelte, CSS-in-JS and complex conditional token cascades do not have persistent font adapters.
 
-The executable is `design-studio`; the package name is `design-studio-workspace`. **This project is not published to npm.** The npm registry contains an unrelated `design-studio` package, so do not use `npx design-studio`. `npm view design-studio-workspace name version --json` returned E404 (not found) on 2026-10-11. This is a candidate for a future registry release, not a reserved name or a guarantee that npm will accept it; recheck availability before publishing. The package remains private.
+The executable is `design-studio`; the package name is `design-studio-workspace`. **This project is not published to npm.** The npm registry contains an unrelated `design-studio` package, so do not use `npx design-studio`. Install from this repository using the steps below. The package remains private; a future npm release requires checking name availability and ownership again.
 
-Node.js **22.12 or newer** is required. The CLI uses platform-neutral Node/Vite APIs and browser-opening commands for macOS, Linux and Windows. Validation here uses macOS arm64, Node 24.11.1 and Chrome; the existing packed-CLI CI also covers Linux and Windows; browser rendering on those platforms is not verified here. Use `--no-open` if automatic browser opening is unavailable.
+Node.js **22.12 or newer** is required. The CLI uses platform-neutral Node/Vite APIs and browser-opening commands for macOS, Linux and Windows. Local workflow validation includes macOS arm64, Node 22.12.0 and Chrome. Packed-CLI CI covers macOS, Linux and Windows; those checks do not establish browser rendering on every platform. Use `--no-open` if automatic browser opening is unavailable.
 
 ## One-time installation
 
@@ -64,7 +81,7 @@ design-studio --project "/path/to/my website"
 design-studio --help
 ```
 
-`--port` selects two consecutive ports: the editor at that port, preview at the next. If the editor port is occupied, startup fails with instructions to choose a free pair. If the preview port is occupied or website dependencies are missing, the editor remains available and prints the reason and remedy; actual-project preview is unavailable until you fix the issue and restart. Browser-launch failure prints the URL to open manually; `--no-open` suppresses launch.
+`--port` selects two consecutive ports: the editor at that port, preview at the next. With an explicit `--port`, either occupied port causes startup to report the conflict. If website dependencies are missing or preview startup fails, the editor reports the reason and remedy; fix the issue and restart to enable the actual-project preview. Browser-launch failure prints the URL to open manually; `--no-open` suppresses launch.
 
 Install your website's own dependencies using its package manager before starting (for npm projects, `npm ci` with a lockfile or `npm install`). Design Studio never installs them automatically and never adds itself to your website's manifest. Quoted paths containing spaces are supported.
 
@@ -100,6 +117,12 @@ design-studio rollback --id <printed-transaction-id>
 
 Leave out `--target` to introduce a managed `design.tokens.css` layer. Its repeated scope selectors outrank ordinary project token declarations regardless of Vite import order, matching the temporary preview. An existing unmanaged default filename is refused. For a supported React/Vite project, the stylesheet is connected automatically. Mapped root/body tokens can use `.dark`, `html.dark`, `body.dark` or supported `data-theme="dark"` selectors, including unconditional `@layer` blocks. A manually selected `.design-scope` remains available. The configuration retains the detected theme selector and each token’s color encoding. Conditional/important rules and mixed scopes require manual integration. Components must consume mapped variables; **Map project colors** can also migrate individually selected hardcoded CSS declarations. Review lists those source edits and refuses stale or ambiguous declarations; unrelated colors remain untouched.
 
+### Review before applying
+
+![Apply review showing the proposed semantic CSS and selected local font import](docs/apply-review.jpg)
+
+*Review proposed diff plans the selected design without changing website files. Apply reviewed change is the explicit write action. This screenshot shows the bundled example; the displayed project path depends on your machine.*
+
 ### Failure recovery and rollback
 
 Apply stages files before replacing them, checks every reviewed file again, uses a project lock and saves before/after bytes with SHA-256 checks. Caught write failures restore files already changed, unless conflicting concurrent edits would be overwritten. A multi-file filesystem change is not a single OS-atomic operation: an abrupt power loss or process kill can leave a **prepared** record. New Apply operations refuse to continue until it is recovered:
@@ -132,6 +155,11 @@ The searchable preset registry contains 24 original compositions assembled from 
 Randomize offers monochromatic, analogous, complementary and triadic schemes. It changes only the active theme and preserves locked roles and supporting overrides. Font pairings have separate heading/body category filters, full-variant locks and a verified Kazakh/Russian filter for unlocked choices. Starter pairings work offline; opt into the Fontsource catalog for more families. Locks can prevent readable combinations, so check both themes' contrast results.
 
 ## Fonts, downloads and language coverage
+
+![Separate Heading and Body controls, bundled Noto font status, weight, style and font search](docs/fonts.jpg)
+
+*Choose Heading and Body separately. This example uses bundled Noto Serif: its selected variant has verified English, Russian and Kazakh coverage. That verification does not extend to the whole catalog.*
+
 
 The metadata catalog contains 2,100 Fontsource families, with family search, category/verified-language filters, favorites and editable sample text. Visible rows are virtualized. The whole library is not downloaded. Cached samples load locally; downloading a new family or variant requires the opt-in sample control or an explicit selection. Reopening a saved pinned selection may need a download on a new machine.
 
@@ -181,7 +209,7 @@ Original project code and compositions retain the existing [MIT license](LICENSE
 | Fontsource Noto Sans / Noto Serif | Bundled starter assets | OFL-1.1 |
 | Fontsource API | Metadata catalog; additional assets on demand | Font licenses are package-specific |
 
-[Realtime Colors](https://www.realtimecolors.com/) is **UX inspiration**, separately from imported open-source resources. Repository inspection found no imported Realtime Colors code or artwork; its source and visual assets are not redistributed. Design Studio has its own interface and actual-project workflow. The legacy SVG wordmark and inline icons are original project code. The current PNG logo is user-supplied artwork copied unchanged to `public/design-studio-logo.png`; `public/design-studio-favicon.png` is a separate emblem crop. Both are included in the built editor and packaged CLI. Their origin and license have not been documented; no license claim is made for these images. The workspace screenshot above predates this logo update and shows the legacy wordmark.
+[Realtime Colors](https://www.realtimecolors.com/) is **UX inspiration**, separately from imported open-source resources. Repository inspection found no imported Realtime Colors code or artwork; its source and visual assets are not redistributed. Design Studio has its own interface and actual-project workflow. The legacy SVG wordmark and inline icons are original project code. The current PNG logo is user-supplied artwork copied unchanged to `public/design-studio-logo.png`; `public/design-studio-favicon.png` is a separate emblem crop. Both are included in the built editor and packaged CLI. Their origin and license have not been documented; no license claim is made for these images.
 
 ## Architecture and development
 
